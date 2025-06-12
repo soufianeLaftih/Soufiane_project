@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Connexion - Gestion des Factures</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      animation: fadeIn 1s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .container {
+      background-color: #1e1e2f;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      width: 360px;
+      text-align: center;
+      animation: zoomIn 0.7s ease;
+    }
+
+    @keyframes zoomIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      color: #ffffff;
+      font-weight: 500;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      margin: 12px 0;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background-color: #2a2a3c;
+      color: white;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+
+    input:focus {
+      border-color: #00ffd5;
+      outline: none;
+      box-shadow: 0 0 8px #00ffd5aa;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(45deg, #00ffd5, #00bcd4);
+      color: black;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.2s ease;
+    }
+
+    button:hover {
+      transform: scale(1.03);
+      background: linear-gradient(45deg, #00bcd4, #00ffd5);
+    }
+
+    .error-message {
+      color: #ff4f4f;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    ::placeholder {
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🔐 Connexion</h2>
+    <form id="loginForm">
+      <input type="text" id="username" placeholder="Nom d'utilisateur" required />
+      <input type="password" id="password" placeholder="Mot de passe" required />
+      <button type="submit">Se connecter</button>
+      <p class="error-message" id="errorMessage"></p>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const errorMessage = document.getElementById("errorMessage");
+
+      if (username === "admin" && password === "admin") {
+        localStorage.setItem("loggedIn", "true");
+        window.location.href = "tableau.html";
+      } else {
+        errorMessage.textContent = "❌ Nom d'utilisateur ou mot de passe incorrect.";
+      }
+    });
+  </script>
+</body>
+</html>

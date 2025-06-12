@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestion des Achats</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    * { box-sizing:border-box; margin:0; padding:0; font-family:'Roboto',sans-serif; }
+    body { display:flex; background:#1e1e2f; color:#f0f0f0; min-height:100vh; }
+    #slideMenu {
+      width:250px; background:#121212; padding:20px;
+      position:fixed; top:0; left:0; height:100%; z-index:999;
+      transition:transform .3s;
+    }
+    .menu-item {
+      color:#fff; padding:15px; display:flex; align-items:center; gap:10px;
+      cursor:pointer; transition:background .2s;
+    }
+    .menu-item:hover { background:#2a2a3d; }
+    .menu-item a { text-decoration:none; color:inherit; flex:1; }
+    #slideToggle {
+      position:fixed; bottom:20px; right:20px;
+      background:#333; color:#fff; border:none; padding:12px;
+      border-radius:50%; cursor:pointer; z-index:1000;
+      box-shadow:0 0 10px rgba(0,0,0,0.4); font-size:18px;
+      transition:background .3s;
+    }
+    #slideToggle:hover { background:#444; }
+    #mainContent {
+      margin-left:250px; padding:30px; flex:1; overflow:auto;
+      transition:margin-left .3s;
+    }
+    #slideMenu.hidden ~ #mainContent { margin-left:0; }
+    .top-bar {
+      display:flex; gap:10px; align-items:center; margin-bottom:15px;
+    }
+    .top-bar input { flex:1; padding:10px; border:none; border-radius:5px; }
+    .top-bar button {
+      padding:10px 15px; border:none; border-radius:5px;
+      background:#00adb5; color:#fff; cursor:pointer;
+      transition:background .2s;
+    }
+    .top-bar button:hover { background:#0199a0; }
+    table {
+      width:100%; border-collapse:collapse; background:#29293d;
+      margin-bottom:20px;
+    }
+    th,td { padding:12px; border:1px solid #444; text-align:left; font-size:14px; }
+    th { background:#333; }
+    tr:nth-child(even) { background:#32324d; }
+    tr.pinned { background:#444; border-left:5px solid #FFD700; }
+    .status-Réglée { color:#4CAF50; font-weight:bold; }
+    .status-Partielle { color:#FFB300; }
+    .status-Non\\.réglée { color:#E53935; }
+    .action-icons i { cursor:pointer; margin-right:10px; transition:color .2s; }
+    .action-icons i:hover { color:#00adb5; }
+
+    .form-popup {
+      position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+      background:#2a2a2a; padding:30px; border-radius:10px;
+      z-index:1001; display:none; width:350px;
+    }
+    .form-popup input, .form-popup select {
+      width:100%; padding:10px; margin-bottom:15px;
+      border:none; border-radius:5px;
+    }
+    .form-popup .btn {
+      width:100%; padding:12px; border:none; border-radius:5px;
+      background:#00adb5; color:#fff; font-weight:bold; cursor:pointer;
+    }
+    .notification {
+      position:fixed; top:20px; right:20px;
+      background:#323232; color:#fff;
+      padding:15px 20px; border-radius:5px;
+      animation:fadeInOut 3s ease forwards; z-index:1002;
+    }
+    @keyframes fadeInOut {
+      0%{opacity:0;transform:translateY(-20px)}10%,90%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-20px)}
+    }
+    #statsGlobales {
+      display:flex; flex-wrap:wrap; gap:20px; margin-bottom:20px;
+    }
+    .statBox {
+      background:#2c2c3d; padding:15px 20px; border-radius:8px;
+      color:#f0f0f0; flex:1; min-width:150px;
+      text-align:center; animation:fadeInUp 0.5s ease forwards;
+    }
+    .statBox h4 { font-size:14px; color:#aaa; margin-bottom:5px; }
+    .statBox p { font-size:18px; font-weight:bold; }
+    @keyframes fadeInUp {
+      from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:translateY(0) }
+    }
+    #clientsModal {
+      display:none; position:fixed; top:50%; left:50%;
+      transform:translate(-50%,-50%); background:#2a2a2a;
+      padding:20px; border-radius:8px;
+      max-height:80vh; overflow:auto; z-index:1002;
+    }
+    #clientsModal h3 { margin-bottom:15px; }
+    #clientsModal ul { list-style:none; padding:0; margin:0 0 15px; }
+    #clientsModal li { margin-bottom:10px; }
+    #slideMenu.hidden {
+  transform: translateX(-100%);
+}
+
+  </style>
+</head>
+<body>
+
+<div id="slideMenu">
+  <div class="menu-item" onclick="openForm()"><i class="fas fa-plus"></i> Ajouter achat</div>
+  <div class="menu-item" onclick="exportExcelAchat()"><i class="fas fa-file-excel"></i> Exporter Excel</div>
+  <div class="menu-item" onclick="exportPDFAchat()"><i class="fas fa-file-pdf"></i> Exporter PDF</div>
+  <div class="menu-item" onclick="viderTableauAchat()"><i class="fas fa-trash"></i> Vider le tableau</div>
+  <div class="menu-item" onclick="deconnexion()"><i class="fas fa-sign-out-alt"></i> Déconnexion</div>
+  <hr style="border:1px solid #333;margin:15px 0">
+  <div class="menu-item"><i class="fas fa-calendar-alt"></i> Recherche par période</div>
+  <input type="date" id="dateDebutA" style="margin-bottom:8px;">
+  <input type="date" id="dateFinA" style="margin-bottom:8px;">
+  <button class="btn" onclick="filtrerParPeriodeA()">Rechercher</button>
+  <hr style="border:1px solid #333;margin:15px 0">
+  <div class="menu-item" onclick="ouvrirListeFournisseurs()"><i class="fas fa-industry"></i> Gérer fournisseurs</div>
+  <hr style="border:1px solid #333;margin:15px 0">
+  <div class="menu-item" onclick="window.location.href='tableau.html'"><i class="fas fa-file-invoice-dollar"></i> Ventes</div>
+</div>
+
+<button id="slideToggle" onclick="toggleSlide()"><i class="fas fa-bars"></i></button>
+
+<div id="mainContent">
+  <div class="top-bar">
+    <input type="text" placeholder="Rechercher fournisseur..." id="searchInputA" onkeyup="rechercherFournisseur()">
+    <button onclick="openForm()">+ Ajouter une facture d'achat</button>
+  </div>
+
+  <table id="achatsTable">
+    <thead>
+      <tr>
+        <th>Fournisseur</th><th>Numéro</th><th>Date dépôt</th><th>Montant TTC</th>
+        <th>Date 1</th><th>Date 2</th><th>Statut</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="tableBodyA"></tbody>
+  </table>
+
+  <div id="statsGlobales"></div>
+</div>
+
+<div class="form-popup" id="achatForm">
+  <h3 id="formTitleA">Nouvel achat</h3>
+  <input type="text" id="fournisseur" placeholder="Fournisseur">
+  <input type="text" id="numero" placeholder="FA250001">
+  <input type="date" id="dateDepot">
+  <input type="number" id="montant" placeholder="Montant TTC">
+  <input type="date" id="date1" placeholder="Date 1">
+  <input type="date" id="date2" placeholder="Date 2">
+  <select id="statut">
+    <option>Réglée</option>
+    <option>Partielle</option>
+    <option>Non réglée</option>
+  </select>
+  <button class="btn" onclick="enregistrerAchat()">Enregistrer</button>
+</div>
+
+<div id="clientsModal" style="display:none">
+  <h3>Liste fournisseurs</h3>
+  <ul id="clientsListA"></ul>
+  <button class="btn cancel" onclick="fermerListeFournisseurs()">Fermer</button>
+</div>
+
+<script>
+let achats = JSON.parse(localStorage.getItem('achats')||'[]');
+let editingIndexA = null;
+
+// Utilitaire notifications
+function showNotification(msg){
+  const d = document.createElement('div');
+  d.className='notification';
+  d.innerText = msg;
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), 3000);
+}
+
+// Slide toggle
+function toggleSlide() {
+  document.getElementById('slideMenu').classList.toggle('hidden');
+}
+
+// Génération numéro
+function generateNumeroA(){
+  const base=250001 + achats.length;
+  return 'FA' + base;
+}
+
+// Ouvrir le formulaire
+function openForm(i=null){
+  editingIndexA = i;
+  document.getElementById('achatForm').style.display='block';
+  document.getElementById('formTitleA').innerText = i===null ? 'Nouvel achat' : 'Modifier achat';
+  document.getElementById('fournisseur').value = i===null ? '' : achats[i].fournisseur;
+  document.getElementById('numero').value = i===null ? generateNumeroA() : achats[i].numero;
+  document.getElementById('dateDepot').value = i===null ? '' : achats[i].dateDepot;
+  document.getElementById('montant').value = i===null ? '' : achats[i].montant;
+  document.getElementById('date1').value = i===null ? '' : achats[i].date1;
+  document.getElementById('date2').value = i===null ? '' : achats[i].date2;
+  document.getElementById('statut').value = i===null ? 'Réglée' : achats[i].statut;
+}
+
+// Enregistrer ou modifier
+function enregistrerAchat(){
+  const obj = {
+    fournisseur:document.getElementById('fournisseur').value.trim(),
+    numero:document.getElementById('numero').value.trim(),
+    dateDepot:document.getElementById('dateDepot').value,
+    montant:+document.getElementById('montant').value,
+    date1:document.getElementById('date1').value,
+    date2:document.getElementById('date2').value,
+    statut:document.getElementById('statut').value
+  };
+  if(editingIndexA!==null){
+    achats[editingIndexA]=obj;
+    showNotification('Achat modifié');
+  } else {
+    achats.push(obj);
+    showNotification('Achat ajouté');
+  }
+  localStorage.setItem('achats', JSON.stringify(achats));
+  document.getElementById('achatForm').style.display='none';
+  afficherAchats();
+}
+
+// Affichage du tableau + stat
+function afficherAchats(){
+  const tbody = document.getElementById('tableBodyA');
+  tbody.innerHTML='';
+  achats.forEach((a,i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><a href="fournisseur.html?nom=${encodeURIComponent(a.fournisseur)}">${a.fournisseur}</a></td>
+      <td>${a.numero}</td>
+      <td>${a.dateDepot}</td>
+      <td>${a.montant.toLocaleString('fr-FR')}</td>
+      <td>${a.date1}</td>
+      <td>${a.date2}</td>
+      <td class="status-${a.statut.replace(' ', '\\\\ ')}">${a.statut}</td>
+      <td class="action-icons">
+        <i class="fas fa-edit" onclick="openForm(${i})"></i>
+        <i class="fas fa-trash" onclick="supprimerA(${i})"></i>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  majStatsA();
+}
+
+// Suppression
+function supprimerA(i){
+  achats.splice(i,1);
+  localStorage.setItem('achats', JSON.stringify(achats));
+  showNotification('Achat supprimé');
+  afficherAchats();
+}
+
+// Statistiques
+function majStatsA(){
+  const total = achats.length;
+  const montant = achats.reduce((s,a)=>s+a.montant,0);
+  const paye = achats.filter(a=>a.statut==='Réglée').reduce((s,a)=>s+a.montant,0)
+              + achats.filter(a=>a.statut==='Partielle').reduce((s,a)=>s+a.montant/2,0);
+  const restant = montant-paye;
+  const pourcent = montant? Math.round(paye/montant*100) : 0;
+  document.getElementById('statsGlobales').innerHTML = `
+    <div class="statBox"><h4>Total achats</h4><p>${total}</p></div>
+    <div class="statBox"><h4>Montant</h4><p>${montant.toLocaleString('fr-FR')}</p></div>
+    <div class="statBox"><h4>Payé</h4><p>${paye.toLocaleString('fr-FR')}</p></div>
+    <div class="statBox"><h4>Restant</h4><p>${restant.toLocaleString('fr-FR')}</p></div>
+    <div class="statBox"><h4>% Réglé</h4><p>${pourcent}%</p></div>`;
+}
+
+// Filtres
+function rechercherFournisseur(){
+  const q = document.getElementById('searchInputA').value.toLowerCase();
+  document.querySelectorAll('#tableBodyA tr').forEach(tr=>{
+    tr.style.display = tr.cells[0].innerText.toLowerCase().includes(q)?'':'none';
+  });
+}
+function filtrerParPeriodeA(){
+  const d1 = document.getElementById('dateDebutA').value;
+  const d2 = document.getElementById('dateFinA').value;
+  document.querySelectorAll('#tableBodyA tr').forEach(tr=>{
+    const d=tr.cells[2].innerText;
+    tr.style.display = (!d1||d>=d1)&&(!d2||d<=d2)?'':'none';
+  });
+}
+
+// Liste fournisseurs
+function ouvrirListeFournisseurs(){
+  const setF = new Set(achats.map(a=>a.fournisseur));
+  const ul=document.getElementById('clientsListA'); ul.innerHTML='';
+  Array.from(setF).sort().forEach(n=>{
+    const li=document.createElement('li');
+    li.innerHTML = `<button class="btn" onclick="filtrerParFournisseur('${n}')">${n}</button>`;
+    ul.appendChild(li);
+  });
+  document.getElementById('clientsModal').style.display='block';
+}
+function fermerListeFournisseurs(){
+  document.getElementById('clientsModal').style.display='none';
+  afficherAchats();
+}
+function filtrerParFournisseur(n){
+  document.querySelectorAll('#tableBodyA tr').forEach(tr=>{
+    tr.style.display = tr.cells[0].innerText===n?'':'none';
+  });
+  fermerListeFournisseurs();
+}
+
+// Exports (idem à ventes)
+function exportExcelAchat(){ showNotification('Export Excel pas encore codé'); }
+function exportPDFAchat(){ showNotification('Export PDF pas encore codé'); }
+function viderTableauAchat(){ if(confirm('Tout supprimer ?')){ achats=[]; localStorage.removeItem('achats'); afficherAchats(); majStatsA(); }}
+function deconnexion(){ window.location.href='index.html'; }
+
+// Initialisation
+afficherAchats();
+</script>
+</body>
+</html>

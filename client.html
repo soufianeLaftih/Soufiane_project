@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Détails du Client</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Roboto + Font Awesome -->
+<link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin:0; padding:0; font-family:'Roboto',sans-serif; }
+  body { background:#1e1e2f; color:#f0f0f0; padding:20px; overflow-auto; }
+  .back-btn {
+    display:inline-block; margin-bottom:20px;
+    color:#00adb5; text-decoration:none; font-weight:bold;
+    opacity:0; animation: fadeIn 0.5s forwards;
+  }
+  .back-btn i { margin-right:8px; }
+  h1 { margin-bottom:20px; opacity:0; animation: fadeIn 0.6s forwards; animation-delay:0.2s; }
+  .stats {
+    display:flex; flex-wrap:wrap; gap:15px; margin-bottom:30px;
+  }
+  .stat {
+    flex:1; min-width:180px; background:#2a2a39; padding:15px; border-radius:8px;
+    opacity:0; transform: translateY(20px);
+    animation: fadeInUp 0.5s forwards;
+  }
+  .stat:nth-child(n) { animation-delay: calc(0.3s + 0.1s * (var(--n))); }
+  .stat h2 { font-size:1em; color:#aaa; }
+  .stat p { font-size:1.4em; font-weight:bold; margin-top:5px; }
+  @keyframes fadeInUp {
+    to { opacity:1; transform:translateY(0); }
+  }
+  @keyframes fadeIn {
+    to { opacity:1; }
+  }
+  #charts { display:flex; flex-wrap:wrap; gap:30px; margin-bottom:40px; }
+  .chart-container {
+    flex:1; min-width:300px; background:#29293d; padding:15px; border-radius:8px;
+    position:relative; opacity:0; animation: fadeIn 0.7s forwards;
+  }
+  .chart-container:nth-child(1){ animation-delay:1s;}
+  .chart-container:nth-child(2){ animation-delay:1.2s;}
+  canvas { width:100% !important; height:300px !important; }
+  table { width:100%; border-collapse:collapse; background:#29293d; border-radius:8px; overflow:hidden; animation: fadeIn 0.8s forwards; }
+  th,td { padding:12px; border:1px solid #444; text-align:center; }
+  th { background:#333; }
+  tr:nth-child(even){ background:#32324d; }
+  .payee{ color:#4CAF50; font-weight:bold; }
+  .partielle{ color:#FFB300; }
+  .impayee{ color:#E53935; }
+</style>
+</head>
+<body>
+
+<a href="tableau.html" class="back-btn"><i class="fas fa-arrow-left"></i>Retour au tableau</a>
+<h1>Détails du client : <span id="clientName"></span></h1>
+
+<div class="stats">
+  <div class="stat" style="--n:0;"><h2>Total factures</h2><p id="totalFactures"></p></div>
+  <div class="stat" style="--n:1;"><h2>Payées</h2><p id="payees"></p></div>
+  <div class="stat" style="--n:2;"><h2>Partielles</h2><p id="partielles"></p></div>
+  <div class="stat" style="--n:3;"><h2>Impayées</h2><p id="impayees"></p></div>
+  <div class="stat" style="--n:4;"><h2>Montant total</h2><p id="montantTotal"></p></div>
+  <div class="stat" style="--n:5;"><h2>Montant payé</h2><p id="montantPaye"></p></div>
+  <div class="stat" style="--n:6;"><h2>Montant restant</h2><p id="montantRestant"></p></div>
+  <div class="stat" style="--n:7;"><h2>% Payé</h2><p id="pourcentage"></p></div>
+</div>
+
+<div id="charts">
+  <div class="chart-container">
+    <canvas id="statusChart"></canvas>
+  </div>
+  <div class="chart-container">
+    <canvas id="progressChart"></canvas>
+  </div>
+</div>
+
+<h2>Liste des factures</h2>
+<table>
+  <thead><tr><th>Numéro</th><th>Date dépôt</th><th>Montant</th><th>Payé</th><th>Reste</th><th>Compte</th><th>Date paiement</th><th>Statut</th></tr></thead>
+  <tbody id="tableBody"></tbody>
+</table>
+
+<script>
+  // Récupération du client
+  const client = localStorage.getItem('clientSelected');
+  document.getElementById('clientName').innerText = client;
+
+  const all = JSON.parse(localStorage.getItem('factures')||'[]');
+  const data = all.filter(f => f.client === client);
+
+  // Statistiques
+  let total=data.length, payees=0, partielles=0, impayees=0;
+  let montantTotal=0, montantPaye=0;
+  data.forEach(f=>{
+    montantTotal+=f.montant;
+    montantPaye+=f.paye;
+    if(f.statut==='payee') payees++;
+    else if(f.statut==='partielle') partielles++;
+    else impayees++;
+  });
+  const restant=montantTotal-montantPaye;
+  const pourc = montantTotal ? Math.round(montantPaye/montantTotal*100)+'%' : '0%';
+
+  // Affichage
+  document.getElementById('totalFactures').innerText=total;
+  document.getElementById('payees').innerText=payees;
+  document.getElementById('partielles').innerText=partielles;
+  document.getElementById('impayees').innerText=impayees;
+  document.getElementById('montantTotal').innerText=montantTotal.toLocaleString('fr-FR');
+  document.getElementById('montantPaye').innerText=montantPaye.toLocaleString('fr-FR');
+  document.getElementById('montantRestant').innerText=restant.toLocaleString('fr-FR');
+  document.getElementById('pourcentage').innerText=pourc;
+
+  // Chart 1 : statuts (pie)
+  new Chart(document.getElementById('statusChart').getContext('2d'), {
+    type:'pie', data:{
+      labels:['Payée','Partielle','Impayée'],
+      datasets:[{ data:[payees,partielles,impayees],
+        backgroundColor:['#4caf50','#ffb300','#e53935'] }]
+    },
+    options:{plugins:{legend:{position:'bottom'}}, animation:{duration:800}}
+  });
+
+  // Chart 2 : évolution payement vs total (doughnut)
+  new Chart(document.getElementById('progressChart').getContext('2d'), {
+    type:'doughnut', data:{
+      labels:['Payé','Restant'],
+      datasets:[{ data:[montantPaye,restant],
+        backgroundColor:['#00adb5','#32324d'] }]
+    },
+    options:{cutout:'70%', plugins:{legend:{position:'bottom'}}, animation:{animateScale:true}}
+  });
+
+  // Tableau détaillé
+  const tbody=document.getElementById('tableBody');
+  data.forEach(f=>{
+    const reste=f.montant-f.paye;
+    const tr=document.createElement('tr');
+    tr.innerHTML = `<td>${f.numero}</td><td>${f.dateDepot}</td><td>${f.montant.toLocaleString('fr-FR')}</td>
+      <td>${f.paye.toLocaleString('fr-FR')}</td><td>${reste.toLocaleString('fr-FR')}</td>
+      <td>${f.compte}</td><td>${f.datePaiement||'-'}</td>
+      <td class="${f.statut}">${f.statut==='payee'?'Payée':f.statut==='partielle'?'Partielle':'Impayée'}</td>`;
+    tbody.appendChild(tr);
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Gestion des Factures</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;font-family:'Roboto',sans-serif;}
+  body{display:flex;background:#1e1e2f;color:#f0f0f0;height:100vh;overflow:hidden;}
+  #slideMenu{width:250px;background:#121212;padding:20px;position:fixed;left:0;top:0;height:100%;z-index:999;transition:transform .3s;}
+  #slideMenu.hidden{transform:translateX(-100%);}
+#slideToggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #333;
+  color: #fff;
+  border: none;
+  padding: 12px 15px;
+  cursor: pointer;
+  z-index: 999;
+  border-radius: 50%;
+  font-size: 18px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.4);
+  transition: background-color 0.3s;
+}
+
+#slideToggle:hover {
+  background-color: #444;
+}
+  #mainContent{margin-left:250px;padding:30px;width:100%;transition:margin-left .3s;height:100%; overflow:auto;}
+  #slideMenu.hidden~#mainContent{margin-left:0;}
+  .menu-item{color:#fff;padding:15px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:color .2s;}
+  .menu-item:hover{color:#00adb5;}
+  .search-bar{margin-bottom:15px;}
+  .search-bar input{width:100%;padding:10px;border-radius:5px;border:none;}
+  table{width:100%;border-collapse:collapse;background:#29293d;margin-bottom:20px;}
+  th,td{padding:12px;border:1px solid #444;text-align:left;font-size:14px;}
+  th{background:#333;color:#fff;cursor:default;}
+  th.sortable:hover{cursor:pointer;color:#00adb5;}
+  tr:nth-child(even){background:#32324d;}
+  tr.pinned{background:#444;border-left:5px solid #FFD700;}
+  .status-payee{color:#4CAF50;font-weight:bold;}
+  .status-partielle{color:#FFB300;}
+  .status-impayee{color:#E53935;}
+  .action-icons i{cursor:pointer;margin-right:10px;transition:color .2s;}
+  .action-icons i:hover{color:#00adb5;}
+  .form-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#2a2a2a;padding:30px;border-radius:10px;z-index:1000;display:none;width:320px;}
+  .form-popup input, .form-popup select{width:100%;padding:10px;margin-bottom:15px;border:none;border-radius:5px;}
+  .form-popup .btn{background:#00adb5;color:#fff;border:none;padding:12px;cursor:pointer;border-radius:5px;font-weight:bold;}
+  .notification{position:fixed;top:20px;right:20px;background:#323232;color:#fff;padding:15px 20px;border-radius:5px;animation:fadeInOut 3s ease forwards;z-index:1001;}
+  @keyframes fadeInOut{0%{opacity:0;transform:translateY(-20px);}10%,90%{opacity:1;transform:translateY(0);}100%{opacity:0;transform:translateY(-20px);}}
+  .statBox {
+  background: #2c2c3d;
+  padding: 15px 20px;
+  border-radius: 8px;
+  color: #f0f0f0;
+  flex: 1;
+  min-width: 150px;
+  text-align: center;
+  animation: fadeIn .5s ease-in-out;
+}
+.statBox h4 { font-size: 14px; color: #aaa; margin-bottom: 5px; }
+.statBox p { font-size: 18px; font-weight: bold; }
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  color: white;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.menu-item i {
+  margin-right: 10px;
+}
+
+.menu-item:hover {
+  background-color: #2a2a2a;
+  border-radius: 6px;
+}
+
+.menu-item a {
+  text-decoration: none;
+  color: inherit;
+  font-weight: bold;
+}
+.menu-item:hover {
+  background-color: #2a2a2a;
+  transform: translateX(5px);
+}
+
+</style>
+</head>
+<body>
+
+<div id="slideMenu">
+  <div class="menu-item" onclick="openForm()"><i class="fas fa-plus"></i> Ajouter facture</div>
+  <div class="menu-item" onclick="exportExcel()"><i class="fas fa-file-excel"></i> Exporter Excel</div>
+  <div class="menu-item" onclick="exportPDF()"><i class="fas fa-file-pdf"></i> Exporter PDF</div>
+  <div class="menu-item" onclick="viderTableau()"><i class="fas fa-trash"></i> Vider le tableau</div>
+  <div class="menu-item" onclick="deconnexion()"><i class="fas fa-sign-out-alt"></i> Déconnexion</div>
+  
+  <hr style="border: 1px solid #333; margin: 15px 0;">
+
+  <div class="menu-item"><i class="fas fa-calendar-alt"></i> Recherche par période</div>
+  <input type="date" id="dateDebut" style="margin-bottom:8px;">
+  <input type="date" id="dateFin" style="margin-bottom:8px;">
+  <button class="btn" onclick="filtrerParPeriode()">Rechercher</button>
+
+  <hr style="border: 1px solid #333; margin: 15px 0;">
+
+  <div class="menu-item" onclick="ouvrirListeClients()"><i class="fas fa-users"></i> Gérer les clients</div>
+<div class="menu-item" id="achatBtn">
+  <i class="fas fa-shopping-cart"></i>
+  <a href="achats.html">Gestion des Achats</a>
+</div>
+
+</div>
+
+
+<button id="slideToggle" onclick="toggleSlide()"><i class="fas fa-bars"></i></button>
+
+<div id="mainContent">
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Rechercher client..." onkeyup="rechercherClient()">
+  </div>
+
+  <table id="facturesTable">
+    <thead>
+      <tr>
+        <th class="sortable">Client</th>
+        <th>Numéro</th>
+        <th>Date Dépôt</th>
+        <th>Montant</th>
+        <th>Payé</th>
+        <th>Date Paiement</th>
+        <th>Compte</th>
+        <th>Statut</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+  <div id="statsGlobales" style="margin-top: 20px; display: flex; gap: 20px; flex-wrap: wrap;">
+  <div class="statBox"><h4>📦 Factures</h4><p id="statTotal">0</p></div>
+  <div class="statBox"><h4>💰 Total</h4><p id="statMontant">0</p></div>
+  <div class="statBox"><h4>💵 Payé</h4><p id="statPaye">0</p></div>
+  <div class="statBox"><h4>⏳ Restant</h4><p id="statRestant">0</p></div>
+  <div class="statBox"><h4>📈 % Payé</h4><p id="statPourcent">0%</p></div>
+</div>
+
+</div>
+
+<div class="form-popup" id="factureForm">
+  <h3 id="formTitle">Nouvelle facture</h3>
+  <input type="text" id="client" placeholder="Nom du client">
+  <input type="text" id="numero" readonly placeholder="Numéro auto">
+  <input type="date" id="dateDepot">
+  <input type="number" id="montant" placeholder="Montant">
+  <input type="number" id="paye" placeholder="Montant payé">
+  <input type="date" id="datePaiement">
+  <select id="compte"><option>CDM</option><option>ATT</option></select>
+  <button class="btn" onclick="enregistrerFacture()">Enregistrer</button>
+</div>
+
+<script>
+let factures = JSON.parse(localStorage.getItem('factures')||'[]');
+let editingIndex = null;
+let pinnedSet = new Set(JSON.parse(localStorage.getItem('pinned')||'[]'));
+
+function showNotification(msg){
+  const d=document.createElement('div');
+  d.className='notification';
+  d.innerText=msg;
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(),3000);
+}
+
+function toggleSlide(){
+  const slide = document.getElementById('slideMenu');
+  const icon = document.querySelector('#slideToggle i');
+
+  slide.classList.toggle('hidden');
+
+  // Change l'icône
+  if(slide.classList.contains('hidden')){
+    icon.classList.remove('fa-times');
+    icon.classList.add('fa-bars');
+  } else {
+    icon.classList.remove('fa-bars');
+    icon.classList.add('fa-times');
+  }
+}
+
+
+function openForm(i=null){
+  editingIndex=i;
+  const f=document.getElementById('factureForm');
+  f.style.display='block';
+  document.getElementById('formTitle').innerText = i===null?'Nouvelle facture':'Modifier facture';
+  document.getElementById('numero').value = i===null?generateNumero():factures[i].numero;
+  ['client','dateDepot','montant','paye','datePaiement'].forEach(field=>{
+    document.getElementById(field).value = i===null?'':factures[i][field]||'';
+  });
+  document.getElementById('compte').value = i===null?'CDM':factures[i].compte;
+}
+
+function generateNumero(){
+  const num=251000+factures.length;
+  return 'FA'+num.toString().padStart(5,'0');
+}
+
+function enregistrerFacture(){
+  const fObj={
+    client:document.getElementById('client').value.trim(),
+    numero:document.getElementById('numero').value,
+    dateDepot:document.getElementById('dateDepot').value,
+    montant:+document.getElementById('').value,
+    paye:+document.getElementById('paye').value,
+    datePaiement:document.getElementById('datePaiement').value,
+    compte:document.getElementById('compte').value
+  };
+  fObj.statut = fObj.paye===0?'impayee':fObj.paye<fObj.montant?'partielle':'payee';
+  if(editingIndex!==null){
+    factures[editingIndex]=fObj;
+    showNotification('Facture modifiée');
+  } else {
+    factures.push(fObj);
+    showNotification('Facture ajoutée');
+  }
+  localStorage.setItem('factures', JSON.stringify(factures));
+  document.getElementById('factureForm').style.display='none';
+  afficherTableau();
+}
+
+function afficherTableau(){
+  const tbody=document.getElementById('tableBody');
+  tbody.innerHTML='';
+  factures.forEach((f,i)=>{
+    const tr=document.createElement('tr');
+    if(pinnedSet.has(i)) tr.classList.add('pinned');
+    tr.innerHTML = `
+      <td onclick="goToClient('${f.client}')">${f.client}</td>
+      <td>${f.numero}</td>
+      <td>${f.dateDepot}</td>
+      <td>${formatMontant(f.montant)}</td>
+      <td>${formatMontant(f.paye)}</td>
+      <td>${f.datePaiement}</td>
+      <td>${f.compte}</td>
+      <td class="status-${f.statut}">${f.statut==='payee'?'Payée':f.statut==='partielle'?'Partielle':'Impayée'}</td>
+      <td class="action-icons">
+        <i class="fas fa-edit" onclick="openForm(${i})"></i>
+        <i class="fas fa-trash" onclick="supprimer(${i})"></i>
+        <i class="fas fa-thumbtack" onclick="epingler(${i})"></i>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  localStorage.setItem('pinned',JSON.stringify([...pinnedSet]));
+}
+
+function supprimer(i){
+  factures.splice(i,1);
+  showNotification('Facture supprimée');
+  afficherTableau();
+}
+
+function epingler(i){
+  pinnedSet.has(i)?pinnedSet.delete(i):pinnedSet.add(i);
+  afficherTableau();
+}
+
+function formatMontant(n){return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ');}
+
+function rechercherClient(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  document.querySelectorAll('#tableBody tr').forEach(tr=>{
+    tr.style.display=tr.cells[0].innerText.toLowerCase().includes(q)?'':'none';
+  });
+}
+
+function viderTableau(){
+  if(confirm('Tout effacer ?')){
+    factures=[]; pinnedSet.clear();
+    localStorage.clear();
+    showNotification('Tableau vidé');
+    afficherTableau();
+  }
+}
+
+function exportExcel(){
+  showNotification('Export Excel en cours...');
+}
+
+function exportPDF(){
+  showNotification('Export PDF en cours...');
+}
+
+function deconnexion(){
+  showNotification('Déconnexion');
+  setTimeout(()=>window.location.href='index.html',500);
+}
+
+function goToClient(c){
+  localStorage.setItem('clientSelected',c);
+  window.location.href='client.html';
+}
+
+afficherTableau();
+
+
+function exportExcel() {
+  if (factures.length === 0) {
+    showNotification("Aucune donnée à exporter.");
+    return;
+  }
+
+  const data = factures.map(f => ({
+    Client: f.client,
+    Numéro: f.numero,
+    "Date Dépôt": f.dateDepot,
+    Montant: f.montant,
+    "Montant Payé": f.paye,
+    "Date Paiement": f.datePaiement,
+    Compte: f.compte,
+    Statut: f.statut === 'payee' ? 'Payée' : f.statut === 'partielle' ? 'Partielle' : 'Impayée'
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Factures");
+
+  XLSX.writeFile(wb, "Factures.xlsx");
+  showNotification("Export Excel terminé !");
+}
+
+async function exportPDF() {
+  if (factures.length === 0) {
+    showNotification("Aucune donnée à exporter.");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const headers = [["Client", "Numéro", "Date Dépôt", "Montant", "Payé", "Date Paiement", "Compte", "Statut"]];
+  const rows = factures.map(f => [
+    f.client,
+    f.numero,
+    f.dateDepot,
+    formatMontant(f.montant),
+    formatMontant(f.paye),
+    f.datePaiement,
+    f.compte,
+    f.statut === 'payee' ? 'Payée' : f.statut === 'partielle' ? 'Partielle' : 'Impayée'
+  ]);
+
+  doc.autoTable({
+    head: headers,
+    body: rows,
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [30, 30, 47] },
+    margin: { top: 20 }
+  });
+
+  doc.save("Factures.pdf");
+  showNotification("Export PDF terminé !");
+}
+function filtrerParPeriode(){
+  const debut = document.getElementById('dateDebut').value;
+  const fin = document.getElementById('dateFin').value;
+  const tbody = document.getElementById('tableBody');
+  Array.from(tbody.rows).forEach(row=>{
+    const date = row.cells[2].innerText;
+    row.style.display = (!debut || date >= debut) && (!fin || date <= fin) ? '' : 'none';
+  });
+}
+function mettreAJourStatistiques() {
+  const total = factures.length;
+  let montant = 0, paye = 0;
+  factures.forEach(f => {
+    montant += f.montant || 0;
+    paye += f.paye || 0;
+  });
+  const restant = montant - paye;
+  const pourcent = montant ? Math.round((paye / montant) * 100) : 0;
+  document.getElementById('statTotal').innerText = total;
+  document.getElementById('statMontant').innerText = formatMontant(montant);
+  document.getElementById('statPaye').innerText = formatMontant(paye);
+  document.getElementById('statRestant').innerText = formatMontant(restant);
+  document.getElementById('statPourcent').innerText = pourcent + '%';
+}
+mettreAJourStatistiques();
+function ouvrirListeClients() {
+  const clientSet = new Set(factures.map(f => f.client));
+  const clients = Array.from(clientSet).sort();
+  const ul = document.getElementById("clientsList");
+  ul.innerHTML = '';
+  clients.forEach(c => {
+    const li = document.createElement('li');
+    li.innerHTML = `<button class="btn" style="margin-bottom: 10px; width: 100%;" onclick="filtrerParClient('${c}')">${c}</button>`;
+    ul.appendChild(li);
+  });
+  document.getElementById("clientsModal").style.display = 'block';
+}
+
+function fermerListeClients() {
+  document.getElementById("clientsModal").style.display = 'none';
+  afficherTableau(); // recharge toutes les factures
+}
+
+function filtrerParClient(nom) {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+  factures.forEach((f, i) => {
+    if (f.client !== nom) return;
+    const tr = document.createElement('tr');
+    if (pinnedSet.has(i)) tr.classList.add('pinned');
+    tr.innerHTML = `
+      <td onclick="goToClient('${f.client}')">${f.client}</td>
+      <td>${f.numero}</td>
+      <td>${f.dateDepot}</td>
+      <td>${formatMontant(f.montant)}</td>
+      <td>${formatMontant(f.paye)}</td>
+      <td>${f.datePaiement}</td>
+      <td>${f.compte}</td>
+      <td class="status-${f.statut}">${f.statut==='payee'?'Payée':f.statut==='partielle'?'Partielle':'Impayée'}</td>
+      <td class="action-icons">
+        <i class="fas fa-edit" onclick="openForm(${i})"></i>
+        <i class="fas fa-trash" onclick="supprimer(${i})"></i>
+        <i class="fas fa-thumbtack" onclick="epingler(${i})"></i>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  fermerListeClients(); // ferme la fenêtre après le clic
+}
+
+</script>
+<!-- Liste des clients -->
+<div id="clientsModal" class="form-popup" style="display:none; width: 300px; max-height: 400px; overflow-y: auto;">
+  <h3 style="margin-bottom: 10px;">Liste des clients</h3>
+  <ul id="clientsList" style="list-style: none; padding-left: 0;"></ul>
+  <button class="btn" onclick="fermerListeClients()">Fermer</button>
+</div>
+
+</body>
+</html>

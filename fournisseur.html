@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Détails Fournisseur</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Global Styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+        }
+
+        .page-container {
+            display: flex;
+        }
+
+        /* Side Menu Styles */
+        .side-menu {
+            background-color: #333;
+            width: 250px;
+            height: 100vh;
+            position: fixed;
+            z-index: 999;
+            top: 0;
+            left: 0;
+            padding: 20px;
+            display: none;
+        }
+
+        .menu-item {
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        .menu-item a {
+            color: #fff;
+            text-decoration: none;
+        }
+
+        /* Main Content */
+        .content {
+            margin-left: 260px;
+            padding: 20px;
+            width: calc(100% - 260px);
+        }
+
+        h2, h3 {
+            color: #ff9a00;
+        }
+
+        .stats {
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-weight: bold;
+        }
+
+        .chart-container {
+            margin-top: 20px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #444;
+        }
+
+        th {
+            background-color: #333;
+        }
+
+        /* Animation for Chart and Table */
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 1s ease-in-out;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <!-- Side Menu -->
+        <div id="side-menu" class="side-menu">
+            <div class="menu-item" id="back-to-purchases">
+                <a href="achats.html">
+                    <span>← Retour à la page des achats</span>
+                </a>
+            </div>
+            <div class="menu-item">
+                <span>Fournisseur : <strong id="fournisseur-name"></strong></span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            <h2 id="fournisseur-name-header"></h2>
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-label">Nombre total de factures : </span><span id="total-factures"></span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Nombre de factures réglées : </span><span id="factures-reglees"></span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Nombre de factures partielles : </span><span id="factures-partielles"></span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Nombre de factures non réglées : </span><span id="factures-non-reglees"></span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Montant total des achats : </span><span id="montant-total"></span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Montant restant à payer : </span><span id="montant-restant"></span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Pourcentage des factures réglées : </span><span id="pourcentage-reglees"></span>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="statusChart"></canvas>
+            </div>
+
+            <h3>Liste des factures</h3>
+            <table id="factures-table">
+                <thead>
+                    <tr>
+                        <th>Numéro de facture</th>
+                        <th>Date de dépôt</th>
+                        <th>Montant TTC</th>
+                        <th>Date 1</th>
+                        <th>Date 2</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="factures-list"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Onload Function to Populate Supplier Data
+        document.addEventListener("DOMContentLoaded", function() {
+            const fournisseurName = new URLSearchParams(window.location.search).get('fournisseur');
+            document.getElementById('fournisseur-name').textContent = fournisseurName;
+            document.getElementById('fournisseur-name-header').textContent = fournisseurName;
+
+            // Get Factures for the selected fournisseur
+            const factures = JSON.parse(localStorage.getItem('factures')) || [];
+
+            const filteredFactures = factures.filter(facture => facture.fournisseur === fournisseurName);
+
+            // Calculate stats for the supplier
+            const totalFactures = filteredFactures.length;
+            const facturesReglees = filteredFactures.filter(f => f.statut === 'Réglée').length;
+            const facturesPartielles = filteredFactures.filter(f => f.statut === 'Partielle').length;
+            const facturesNonReglees = totalFactures - (facturesReglees + facturesPartielles);
+            const montantTotal = filteredFactures.reduce((total, f) => total + f.montant, 0);
+            const montantRestant = filteredFactures.reduce((total, f) => f.statut !== 'Réglée' ? total + f.montant : total, 0);
+            const pourcentageReglees = totalFactures ? ((facturesReglees / totalFactures) * 100).toFixed(2) : 0;
+
+            // Display stats
+            document.getElementById('total-factures').textContent = totalFactures;
+            document.getElementById('factures-reglees').textContent = facturesReglees;
+            document.getElementById('factures-partielles').textContent = facturesPartielles;
+            document.getElementById('factures-non-reglees').textContent = facturesNonReglees;
+            document.getElementById('montant-total').textContent = montantTotal.toFixed(2) + ' MAD';
+            document.getElementById('montant-restant').textContent = montantRestant.toFixed(2) + ' MAD';
+            document.getElementById('pourcentage-reglees').textContent = pourcentageReglees + '%';
+
+            // Create the chart for statuses
+            const ctx = document.getElementById('statusChart').getContext('2d');
+            const statusChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Réglée', 'Partielle', 'Non Réglée'],
+                    datasets: [{
+                        data: [facturesReglees, facturesPartielles, facturesNonReglees],
+                        backgroundColor: ['#4CAF50', '#FF9800', '#F44336']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    return tooltipItem.label + ': ' + tooltipItem.raw + ' factures';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Display Factures in Table
+            const facturesList = document.getElementById('factures-list');
+            filteredFactures.forEach(facture => {
+                const tr = document.createElement('tr');
+                tr.classList.add('fade-in');
+
+                tr.innerHTML = `
+                    <td>${facture.numero}</td>
+                    <td>${facture.dateDepot}</td>
+                    <td>${facture.montant.toFixed(2)} MAD</td>
+                    <td>${facture.date1}</td>
+                    <td>${facture.date2}</td>
+                    <td>${facture.statut}</td>
+                    <td><button class="btn-modifier">Modifier</button> <button class="btn-supprimer">Supprimer</button></td>
+                `;
+
+                facturesList.appendChild(tr);
+            });
+        });
+    </script>
+</body>
+</html>
