@@ -68,6 +68,7 @@
 }
 .statBox h4 { font-size: 14px; color: #aaa; margin-bottom: 5px; }
 .statBox p { font-size: 18px; font-weight: bold; }
+
 .menu-item {
   display: flex;
   align-items: center;
@@ -95,7 +96,6 @@
   background-color: #2a2a2a;
   transform: translateX(5px);
 }
-
 </style>
 </head>
 <body>
@@ -117,11 +117,11 @@
   <hr style="border: 1px solid #333; margin: 15px 0;">
 
   <div class="menu-item" onclick="ouvrirListeClients()"><i class="fas fa-users"></i> Gérer les clients</div>
-<div class="menu-item" id="achatBtn">
+
+  <div class="menu-item" id="achatBtn">
   <i class="fas fa-shopping-cart"></i>
   <a href="achats.html">Gestion des Achats</a>
 </div>
-
 </div>
 
 
@@ -222,7 +222,7 @@ function enregistrerFacture(){
     client:document.getElementById('client').value.trim(),
     numero:document.getElementById('numero').value,
     dateDepot:document.getElementById('dateDepot').value,
-    montant:+document.getElementById('').value,
+    montant:+document.getElementById('montant').value,
     paye:+document.getElementById('paye').value,
     datePaiement:document.getElementById('datePaiement').value,
     compte:document.getElementById('compte').value
