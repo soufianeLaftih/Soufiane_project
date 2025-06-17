@@ -1,248 +1,89 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Détails Fournisseur</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        /* Global Styles */
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #121212;
-            color: #fff;
-            margin: 0;
-            padding: 0;
-        }
-
-        .page-container {
-            display: flex;
-        }
-
-        /* Side Menu Styles */
-        .side-menu {
-            background-color: #333;
-            width: 250px;
-            height: 100vh;
-            position: fixed;
-            z-index: 999;
-            top: 0;
-            left: 0;
-            padding: 20px;
-            display: none;
-        }
-
-        .menu-item {
-            margin-bottom: 20px;
-            font-size: 18px;
-        }
-
-        .menu-item a {
-            color: #fff;
-            text-decoration: none;
-        }
-
-        /* Main Content */
-        .content {
-            margin-left: 260px;
-            padding: 20px;
-            width: calc(100% - 260px);
-        }
-
-        h2, h3 {
-            color: #ff9a00;
-        }
-
-        .stats {
-            margin-top: 20px;
-        }
-
-        .stat-item {
-            margin-bottom: 10px;
-        }
-
-        .stat-label {
-            font-weight: bold;
-        }
-
-        .chart-container {
-            margin-top: 20px;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        table {
-            width: 100%;
-            margin-top: 20px;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            padding: 10px;
-            text-align: left;
-            border: 1px solid #444;
-        }
-
-        th {
-            background-color: #333;
-        }
-
-        /* Animation for Chart and Table */
-        @keyframes fadeIn {
-            0% {
-                opacity: 0;
-            }
-            100% {
-                opacity: 1;
-            }
-        }
-
-        .fade-in {
-            animation: fadeIn 1s ease-in-out;
-        }
-
-    </style>
+  <meta charset="UTF-8">
+  <title>Fournisseur - Détails</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:'Roboto',sans-serif;}
+    body{background:#1e1e2f;color:#fff;padding:20px;}
+    h2{text-align:center;margin-bottom:30px;}
+    .stats{display:flex;flex-wrap:wrap;justify-content:center;gap:30px;margin-bottom:30px;}
+    .stat{background:#29293d;padding:20px;border-radius:8px;min-width:200px;text-align:center;}
+    .stat h3{margin-bottom:10px;font-size:18px;}
+    .stat p{font-size:24px;font-weight:bold;}
+    table{width:100%;border-collapse:collapse;background:#29293d;}
+    th,td{padding:12px;border:1px solid #444;text-align:left;}
+    th{background:#333;}
+    tr:nth-child(even){background:#32324d;}
+    .status-reglee{color:#4CAF50;font-weight:bold;}
+    .status-partielle{color:#FFB300;}
+    .status-arreglee{color:#E53935;}
+    #retour{display:block;margin-top:30px;text-align:center;color:#00adb5;text-decoration:none;font-weight:bold;}
+  </style>
 </head>
 <body>
-    <div class="page-container">
-        <!-- Side Menu -->
-        <div id="side-menu" class="side-menu">
-            <div class="menu-item" id="back-to-purchases">
-                <a href="achats.html">
-                    <span>← Retour à la page des achats</span>
-                </a>
-            </div>
-            <div class="menu-item">
-                <span>Fournisseur : <strong id="fournisseur-name"></strong></span>
-            </div>
-        </div>
 
-        <!-- Main Content -->
-        <div class="content">
-            <h2 id="fournisseur-name-header"></h2>
-            <div class="stats">
-                <div class="stat-item">
-                    <span class="stat-label">Nombre total de factures : </span><span id="total-factures"></span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Nombre de factures réglées : </span><span id="factures-reglees"></span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Nombre de factures partielles : </span><span id="factures-partielles"></span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Nombre de factures non réglées : </span><span id="factures-non-reglees"></span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Montant total des achats : </span><span id="montant-total"></span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Montant restant à payer : </span><span id="montant-restant"></span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Pourcentage des factures réglées : </span><span id="pourcentage-reglees"></span>
-                </div>
-            </div>
-            <div class="chart-container">
-                <canvas id="statusChart"></canvas>
-            </div>
+<h2 id="nomFournisseur">Fournisseur: </h2>
 
-            <h3>Liste des factures</h3>
-            <table id="factures-table">
-                <thead>
-                    <tr>
-                        <th>Numéro de facture</th>
-                        <th>Date de dépôt</th>
-                        <th>Montant TTC</th>
-                        <th>Date 1</th>
-                        <th>Date 2</th>
-                        <th>Statut</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="factures-list"></tbody>
-            </table>
-        </div>
-    </div>
+<div class="stats">
+  <div class="stat"><h3>Nombre d'achats</h3><p id="totalAchats">0</p></div>
+  <div class="stat"><h3>Réglée</h3><p id="reglee">0</p></div>
+  <div class="stat"><h3>Partielle</h3><p id="partielle">0</p></div>
+  <div class="stat"><h3>Ar-réglée</h3><p id="arreglee">0</p></div>
+  <div class="stat"><h3>Montant total</h3><p id="montantTotal">0</p></div>
+  <div class="stat"><h3>Montant restant</h3><p id="montantRestant">0</p></div>
+</div>
 
-    <script>
-        // Onload Function to Populate Supplier Data
-        document.addEventListener("DOMContentLoaded", function() {
-            const fournisseurName = new URLSearchParams(window.location.search).get('fournisseur');
-            document.getElementById('fournisseur-name').textContent = fournisseurName;
-            document.getElementById('fournisseur-name-header').textContent = fournisseurName;
+<table>
+  <thead>
+    <tr>
+      <th>Numéro</th>
+      <th>Date Dépôt</th>
+      <th>Montant</th>
+      <th>Date 1</th>
+      <th>Date 2</th>
+      <th>Statut</th>
+    </tr>
+  </thead>
+  <tbody id="tableBody"></tbody>
+</table>
 
-            // Get Factures for the selected fournisseur
-            const factures = JSON.parse(localStorage.getItem('factures')) || [];
+<a href="achats.html" id="retour">← Retour aux achats</a>
 
-            const filteredFactures = factures.filter(facture => facture.fournisseur === fournisseurName);
+<script>
+const fournisseur = localStorage.getItem("fournisseurSelected") || "";
+document.getElementById("nomFournisseur").textContent += fournisseur;
+const achats = JSON.parse(localStorage.getItem("achats") || "[]");
+const achatsF = achats.filter(a => a.fournisseur === fournisseur);
+document.getElementById("totalAchats").textContent = achatsF.length;
+document.getElementById("reglee").textContent = achatsF.filter(a => a.statut === "reglee").length;
+document.getElementById("partielle").textContent = achatsF.filter(a => a.statut === "partielle").length;
+document.getElementById("arreglee").textContent = achatsF.filter(a => a.statut === "arreglee").length;
+document.getElementById("montantTotal").textContent = formatMontant(achatsF.reduce((acc, a) => acc + a.montant, 0));
+document.getElementById("montantRestant").textContent = formatMontant(achatsF.filter(a => a.statut !== "reglee").reduce((acc, a) => acc + a.montant, 0));
 
-            // Calculate stats for the supplier
-            const totalFactures = filteredFactures.length;
-            const facturesReglees = filteredFactures.filter(f => f.statut === 'Réglée').length;
-            const facturesPartielles = filteredFactures.filter(f => f.statut === 'Partielle').length;
-            const facturesNonReglees = totalFactures - (facturesReglees + facturesPartielles);
-            const montantTotal = filteredFactures.reduce((total, f) => total + f.montant, 0);
-            const montantRestant = filteredFactures.reduce((total, f) => f.statut !== 'Réglée' ? total + f.montant : total, 0);
-            const pourcentageReglees = totalFactures ? ((facturesReglees / totalFactures) * 100).toFixed(2) : 0;
+const tbody = document.getElementById("tableBody");
+achatsF.forEach(a => {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td>${a.numero}</td>
+    <td>${a.dateDepot}</td>
+    <td>${formatMontant(a.montant)}</td>
+    <td>${a.date1}</td>
+    <td>${a.date2}</td>
+    <td class="status-${a.statut}">${a.statut === 'reglee' ? 'Réglée' : a.statut === 'partielle' ? 'Partielle' : 'Ar-réglée'}</td>
+  `;
+  tbody.appendChild(tr);
+});
 
-            // Display stats
-            document.getElementById('total-factures').textContent = totalFactures;
-            document.getElementById('factures-reglees').textContent = facturesReglees;
-            document.getElementById('factures-partielles').textContent = facturesPartielles;
-            document.getElementById('factures-non-reglees').textContent = facturesNonReglees;
-            document.getElementById('montant-total').textContent = montantTotal.toFixed(2) + ' MAD';
-            document.getElementById('montant-restant').textContent = montantRestant.toFixed(2) + ' MAD';
-            document.getElementById('pourcentage-reglees').textContent = pourcentageReglees + '%';
+function formatMontant(n){
+  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+}
+</script>
 
-            // Create the chart for statuses
-            const ctx = document.getElementById('statusChart').getContext('2d');
-            const statusChart = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: ['Réglée', 'Partielle', 'Non Réglée'],
-                    datasets: [{
-                        data: [facturesReglees, facturesPartielles, facturesNonReglees],
-                        backgroundColor: ['#4CAF50', '#FF9800', '#F44336']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(tooltipItem) {
-                                    return tooltipItem.label + ': ' + tooltipItem.raw + ' factures';
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-
-            // Display Factures in Table
-            const facturesList = document.getElementById('factures-list');
-            filteredFactures.forEach(facture => {
-                const tr = document.createElement('tr');
-                tr.classList.add('fade-in');
-
-                tr.innerHTML = `
-                    <td>${facture.numero}</td>
-                    <td>${facture.dateDepot}</td>
-                    <td>${facture.montant.toFixed(2)} MAD</td>
-                    <td>${facture.date1}</td>
-                    <td>${facture.date2}</td>
-                    <td>${facture.statut}</td>
-                    <td><button class="btn-modifier">Modifier</button> <button class="btn-supprimer">Supprimer</button></td>
-                `;
-
-                facturesList.appendChild(tr);
-            });
-        });
-    </script>
 </body>
 </html>
