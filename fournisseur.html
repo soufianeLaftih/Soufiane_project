@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -33,19 +32,20 @@
   <div class="stat"><h3>Nombre d'achats</h3><p id="totalAchats">0</p></div>
   <div class="stat"><h3>Réglée</h3><p id="reglee">0</p></div>
   <div class="stat"><h3>Partielle</h3><p id="partielle">0</p></div>
-  <div class="stat"><h3>Ar-réglée</h3><p id="arreglee">0</p></div>
+  <div class="stat"><h3>Impayée</h3><p id="arreglee">0</p></div>
   <div class="stat"><h3>Montant total</h3><p id="montantTotal">0</p></div>
   <div class="stat"><h3>Montant restant</h3><p id="montantRestant">0</p></div>
+  <div class="stat"><h3>Pourcentage Payé</h3><p id="pourcentagePaye">0%</p></div>
 </div>
 
 <table>
   <thead>
     <tr>
       <th>Numéro</th>
-      <th>Date Dépôt</th>
-      <th>Montant</th>
-      <th>Date 1</th>
-      <th>Date 2</th>
+      <th>Date Facturation</th>
+      <th>Montant TTC</th>
+      <th>Montant Payé</th>
+      <th>Date Paiement</th>
       <th>Statut</th>
     </tr>
   </thead>
@@ -59,29 +59,37 @@ const fournisseur = localStorage.getItem("fournisseurSelected") || "";
 document.getElementById("nomFournisseur").textContent += fournisseur;
 const achats = JSON.parse(localStorage.getItem("achats") || "[]");
 const achatsF = achats.filter(a => a.fournisseur === fournisseur);
+
 document.getElementById("totalAchats").textContent = achatsF.length;
 document.getElementById("reglee").textContent = achatsF.filter(a => a.statut === "reglee").length;
 document.getElementById("partielle").textContent = achatsF.filter(a => a.statut === "partielle").length;
 document.getElementById("arreglee").textContent = achatsF.filter(a => a.statut === "arreglee").length;
-document.getElementById("montantTotal").textContent = formatMontant(achatsF.reduce((acc, a) => acc + a.montant, 0));
-document.getElementById("montantRestant").textContent = formatMontant(achatsF.filter(a => a.statut !== "reglee").reduce((acc, a) => acc + a.montant, 0));
+
+const montantTotal = achatsF.reduce((acc, a) => acc + a.montant, 0);
+const montantPaye = achatsF.reduce((acc, a) => acc + a.montantPaye, 0);
+const montantRestant = montantTotal - montantPaye;
+const pourcentagePaye = montantTotal ? Math.round((montantPaye / montantTotal) * 100) : 0;
+
+document.getElementById("montantTotal").textContent = formatMontant(montantTotal);
+document.getElementById("montantRestant").textContent = formatMontant(montantRestant);
+document.getElementById("pourcentagePaye").textContent = pourcentagePaye + "%";
 
 const tbody = document.getElementById("tableBody");
 achatsF.forEach(a => {
   const tr = document.createElement("tr");
   tr.innerHTML = `
     <td>${a.numero}</td>
-    <td>${a.dateDepot}</td>
+    <td>${a.dateFacturation}</td>
     <td>${formatMontant(a.montant)}</td>
-    <td>${a.date1}</td>
-    <td>${a.date2}</td>
-    <td class="status-${a.statut}">${a.statut === 'reglee' ? 'Réglée' : a.statut === 'partielle' ? 'Partielle' : 'Ar-réglée'}</td>
+    <td>${formatMontant(a.montantPaye)}</td>
+    <td>${a.datePaiement}</td>
+    <td class="status-${a.statut}">${a.statut === 'reglee' ? 'Payée' : a.statut === 'partielle' ? 'Partielle' : 'Impayée'}</td>
   `;
   tbody.appendChild(tr);
 });
 
 function formatMontant(n){
-  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+  return n.toLocaleString("fr-FR");
 }
 </script>
 
