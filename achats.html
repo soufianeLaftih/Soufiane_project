@@ -6,322 +6,218 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
-    * { box-sizing:border-box; margin:0; padding:0; font-family:'Roboto',sans-serif; }
-    body { display:flex; background:#1e1e2f; color:#f0f0f0; min-height:100vh; }
-    #slideMenu {
-      width:250px; background:#121212; padding:20px;
-      position:fixed; top:0; left:0; height:100%; z-index:999;
-      transition:transform .3s;
-    }
-    .menu-item {
-      color:#fff; padding:15px; display:flex; align-items:center; gap:10px;
-      cursor:pointer; transition:background .2s;
-    }
-    .menu-item:hover { background:#2a2a3d; }
-    .menu-item a { text-decoration:none; color:inherit; flex:1; }
-    #slideToggle {
-      position:fixed; bottom:20px; right:20px;
-      background:#333; color:#fff; border:none; padding:12px;
-      border-radius:50%; cursor:pointer; z-index:1000;
-      box-shadow:0 0 10px rgba(0,0,0,0.4); font-size:18px;
-      transition:background .3s;
-    }
-    #slideToggle:hover { background:#444; }
-    #mainContent {
-      margin-left:250px; padding:30px; flex:1; overflow:auto;
-      transition:margin-left .3s;
-    }
-    #slideMenu.hidden ~ #mainContent { margin-left:0; }
-    .top-bar {
-      display:flex; gap:10px; align-items:center; margin-bottom:15px;
-    }
-    .top-bar input { flex:1; padding:10px; border:none; border-radius:5px; }
-    .top-bar button {
-      padding:10px 15px; border:none; border-radius:5px;
-      background:#00adb5; color:#fff; cursor:pointer;
-      transition:background .2s;
-    }
-    .top-bar button:hover { background:#0199a0; }
-    table {
-      width:100%; border-collapse:collapse; background:#29293d;
-      margin-bottom:20px;
-    }
-    th,td { padding:12px; border:1px solid #444; text-align:left; font-size:14px; }
-    th { background:#333; }
-    tr:nth-child(even) { background:#32324d; }
-    tr.pinned { background:#444; border-left:5px solid #FFD700; }
-    .status-Réglée { color:#4CAF50; font-weight:bold; }
-    .status-Partielle { color:#FFB300; }
-    .status-Non\\.réglée { color:#E53935; }
-    .action-icons i { cursor:pointer; margin-right:10px; transition:color .2s; }
-    .action-icons i:hover { color:#00adb5; }
-
-    .form-popup {
-      position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
-      background:#2a2a2a; padding:30px; border-radius:10px;
-      z-index:1001; display:none; width:350px;
-    }
-    .form-popup input, .form-popup select {
-      width:100%; padding:10px; margin-bottom:15px;
-      border:none; border-radius:5px;
-    }
-    .form-popup .btn {
-      width:100%; padding:12px; border:none; border-radius:5px;
-      background:#00adb5; color:#fff; font-weight:bold; cursor:pointer;
-    }
-    .notification {
-      position:fixed; top:20px; right:20px;
-      background:#323232; color:#fff;
-      padding:15px 20px; border-radius:5px;
-      animation:fadeInOut 3s ease forwards; z-index:1002;
-    }
-    @keyframes fadeInOut {
-      0%{opacity:0;transform:translateY(-20px)}10%,90%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-20px)}
-    }
-    #statsGlobales {
-      display:flex; flex-wrap:wrap; gap:20px; margin-bottom:20px;
-    }
-    .statBox {
-      background:#2c2c3d; padding:15px 20px; border-radius:8px;
-      color:#f0f0f0; flex:1; min-width:150px;
-      text-align:center; animation:fadeInUp 0.5s ease forwards;
-    }
-    .statBox h4 { font-size:14px; color:#aaa; margin-bottom:5px; }
-    .statBox p { font-size:18px; font-weight:bold; }
-    @keyframes fadeInUp {
-      from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:translateY(0) }
-    }
-    #clientsModal {
-      display:none; position:fixed; top:50%; left:50%;
-      transform:translate(-50%,-50%); background:#2a2a2a;
-      padding:20px; border-radius:8px;
-      max-height:80vh; overflow:auto; z-index:1002;
-    }
-    #clientsModal h3 { margin-bottom:15px; }
-    #clientsModal ul { list-style:none; padding:0; margin:0 0 15px; }
-    #clientsModal li { margin-bottom:10px; }
-    #slideMenu.hidden {
-  transform: translateX(-100%);
-}
-
+    *{margin:0;padding:0;box-sizing:border-box;font-family:'Roboto',sans-serif;}
+    body{display:flex;background:#1e1e2f;color:#f0f0f0;height:100vh;overflow:hidden;}
+    #slideMenu{width:250px;background:#121212;padding:20px;position:fixed;left:0;top:0;height:100%;z-index:999;transition:transform .3s;}
+    #slideMenu.hidden{transform:translateX(-100%);}
+    #slideToggle{position:fixed;bottom:20px;right:20px;background:#333;color:#fff;border:none;padding:12px;cursor:pointer;z-index:1000;border-radius:5px;}
+    #mainContent{margin-left:250px;padding:30px;width:100%;transition:margin-left .3s;height:100%;overflow:auto;}
+    #slideMenu.hidden~#mainContent{margin-left:0;}
+    .menu-item{color:#fff;padding:15px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:color .2s;}
+    .menu-item:hover{color:#00adb5;}
+    .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+    .search-bar input{padding:10px;border-radius:5px;border:none;width:250px;}
+    .top-bar .btn-add{background:#00adb5;color:#fff;padding:10px 15px;border:none;border-radius:5px;cursor:pointer;}
+    table{width:100%;border-collapse:collapse;background:#29293d;margin-top:10px;}
+    th,td{padding:12px;border:1px solid #444;text-align:left;font-size:14px;}
+    th{background:#333;}
+    tr:nth-child(even){background:#32324d;}
+    .status-reglee{color:#4CAF50;font-weight:bold;}
+    .status-partielle{color:#FFB300;}
+    .status-arreglee{color:#E53935;}
+    .action-icons i{cursor:pointer;margin-right:10px;transition:color .2s;}
+    .action-icons i:hover{color:#00adb5;}
+    .form-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#2a2a2a;padding:25px;border-radius:10px;z-index:1001;display:none;width:320px;}
+    .form-popup input{width:100%;padding:10px;margin-bottom:10px;border:none;border-radius:5px;}
+    .form-popup .btn{background:#00adb5;color:#fff;padding:12px;border:none;border-radius:5px;font-weight:bold;cursor:pointer;}
+    .notification{position:fixed;top:20px;right:20px;background:#323232;color:#fff;padding:15px 20px;border-radius:5px;animation:fadeInOut 3s ease forwards;z-index:1002;}
+    @keyframes fadeInOut{0%{opacity:0;transform:translateY(-20px);}10%,90%{opacity:1;}100%{opacity:0;transform:translateY(-20px);}}
   </style>
 </head>
 <body>
 
+<!-- Slide Menu -->
 <div id="slideMenu">
   <div class="menu-item" onclick="openForm()"><i class="fas fa-plus"></i> Ajouter achat</div>
-  <div class="menu-item" onclick="exportExcelAchat()"><i class="fas fa-file-excel"></i> Exporter Excel</div>
-  <div class="menu-item" onclick="exportPDFAchat()"><i class="fas fa-file-pdf"></i> Exporter PDF</div>
-  <div class="menu-item" onclick="viderTableauAchat()"><i class="fas fa-trash"></i> Vider le tableau</div>
-  <div class="menu-item" onclick="deconnexion()"><i class="fas fa-sign-out-alt"></i> Déconnexion</div>
-  <hr style="border:1px solid #333;margin:15px 0">
-  <div class="menu-item"><i class="fas fa-calendar-alt"></i> Recherche par période</div>
-  <input type="date" id="dateDebutA" style="margin-bottom:8px;">
-  <input type="date" id="dateFinA" style="margin-bottom:8px;">
-  <button class="btn" onclick="filtrerParPeriodeA()">Rechercher</button>
-  <hr style="border:1px solid #333;margin:15px 0">
-  <div class="menu-item" onclick="ouvrirListeFournisseurs()"><i class="fas fa-industry"></i> Gérer fournisseurs</div>
-  <hr style="border:1px solid #333;margin:15px 0">
-  <div class="menu-item" onclick="window.location.href='tableau.html'"><i class="fas fa-file-invoice-dollar"></i> Ventes</div>
+  <div class="menu-item" onclick="exportExcel()"><i class="fas fa-file-excel"></i> Exporter Excel</div>
+  <div class="menu-item" onclick="exportPDF()"><i class="fas fa-file-pdf"></i> Exporter PDF</div>
+  <div class="menu-item" onclick="viderTableau()"><i class="fas fa-trash"></i> Vider tableau</div>
+  <div class="menu-item" onclick="window.location.href='tableau.html'"><i class="fas fa-arrow-left"></i> Retour Ventes</div>
 </div>
 
 <button id="slideToggle" onclick="toggleSlide()"><i class="fas fa-bars"></i></button>
 
+<!-- Main Content -->
 <div id="mainContent">
   <div class="top-bar">
-    <input type="text" placeholder="Rechercher fournisseur..." id="searchInputA" onkeyup="rechercherFournisseur()">
-    <button onclick="openForm()">+ Ajouter une facture d'achat</button>
+    <div class="search-bar"><input type="text" id="searchInput" placeholder="Rechercher fournisseur..." onkeyup="rechercherFournisseur()"></div>
+    <button class="btn-add" onclick="openForm()">Ajouter Achat</button>
   </div>
 
-  <table id="achatsTable">
+  <table id="table">
     <thead>
       <tr>
-        <th>Fournisseur</th><th>Numéro</th><th>Date dépôt</th><th>Montant TTC</th>
-        <th>Date 1</th><th>Date 2</th><th>Statut</th><th>Actions</th>
+        <th>Fournisseur</th>
+        <th>Numéro</th>
+        <th>Date Facturation</th>
+        <th>Montant TTC</th>
+        <th>Montant Payé</th>
+        <th>Date de Paiement</th>
+        <th>Statut</th>
+        <th>Actions</th>
       </tr>
     </thead>
-    <tbody id="tableBodyA"></tbody>
+    <tbody id="tableBody"></tbody>
   </table>
-
-  <div id="statsGlobales"></div>
 </div>
 
+<!-- Formulaire -->
 <div class="form-popup" id="achatForm">
-  <h3 id="formTitleA">Nouvel achat</h3>
-  <input type="text" id="fournisseur" placeholder="Fournisseur">
-  <input type="text" id="numero" placeholder="FA250001">
-  <input type="date" id="dateDepot">
+  <h3 id="formTitle">Nouvel achat</h3>
+  <input type="text" id="fournisseur" placeholder="Nom du fournisseur">
+  <input type="text" id="numero" placeholder="Numéro de facture">
+  <input type="date" id="dateFacturation">
   <input type="number" id="montant" placeholder="Montant TTC">
-  <input type="date" id="date1" placeholder="Date 1">
-  <input type="date" id="date2" placeholder="Date 2">
-  <select id="statut">
-    <option>Réglée</option>
-    <option>Partielle</option>
-    <option>Non réglée</option>
-  </select>
+  <input type="number" id="montantPaye" placeholder="Montant Payé">
+  <input type="date" id="datePaiement">
   <button class="btn" onclick="enregistrerAchat()">Enregistrer</button>
 </div>
 
-<div id="clientsModal" style="display:none">
-  <h3>Liste fournisseurs</h3>
-  <ul id="clientsListA"></ul>
-  <button class="btn cancel" onclick="fermerListeFournisseurs()">Fermer</button>
-</div>
-
 <script>
-let achats = JSON.parse(localStorage.getItem('achats')||'[]');
-let editingIndexA = null;
+let achats = JSON.parse(localStorage.getItem('achats') || '[]');
+let editIndex = null;
 
-// Utilitaire notifications
-function showNotification(msg){
-  const d = document.createElement('div');
-  d.className='notification';
-  d.innerText = msg;
-  document.body.appendChild(d);
-  setTimeout(() => d.remove(), 3000);
-}
-
-// Slide toggle
 function toggleSlide() {
   document.getElementById('slideMenu').classList.toggle('hidden');
 }
 
-// Génération numéro
-function generateNumeroA(){
-  const base=250001 + achats.length;
-  return 'FA' + base;
+function showNotification(msg){
+  const note = document.createElement('div');
+  note.className = 'notification';
+  note.textContent = msg;
+  document.body.appendChild(note);
+  setTimeout(() => note.remove(), 3000);
 }
 
-// Ouvrir le formulaire
-function openForm(i=null){
-  editingIndexA = i;
-  document.getElementById('achatForm').style.display='block';
-  document.getElementById('formTitleA').innerText = i===null ? 'Nouvel achat' : 'Modifier achat';
-  document.getElementById('fournisseur').value = i===null ? '' : achats[i].fournisseur;
-  document.getElementById('numero').value = i===null ? generateNumeroA() : achats[i].numero;
-  document.getElementById('dateDepot').value = i===null ? '' : achats[i].dateDepot;
-  document.getElementById('montant').value = i===null ? '' : achats[i].montant;
-  document.getElementById('date1').value = i===null ? '' : achats[i].date1;
-  document.getElementById('date2').value = i===null ? '' : achats[i].date2;
-  document.getElementById('statut').value = i===null ? 'Réglée' : achats[i].statut;
+function openForm(i = null){
+  editIndex = i;
+  const f = document.getElementById('achatForm');
+  f.style.display = 'block';
+  document.getElementById('formTitle').innerText = i === null ? 'Nouvel achat' : 'Modifier achat';
+  if(i !== null){
+    let a = achats[i];
+    document.getElementById('fournisseur').value = a.fournisseur;
+    document.getElementById('numero').value = a.numero;
+    document.getElementById('dateFacturation').value = a.dateFacturation;
+    document.getElementById('montant').value = a.montant;
+    document.getElementById('montantPaye').value = a.montantPaye;
+    document.getElementById('datePaiement').value = a.datePaiement;
+  } else {
+    document.getElementById('fournisseur').value = '';
+    document.getElementById('numero').value = 'FA' + (250000 + achats.length + 1);
+    ['dateFacturation','montant','montantPaye','datePaiement'].forEach(id => document.getElementById(id).value = '');
+  }
 }
 
-// Enregistrer ou modifier
 function enregistrerAchat(){
-  const obj = {
-    fournisseur:document.getElementById('fournisseur').value.trim(),
-    numero:document.getElementById('numero').value.trim(),
-    dateDepot:document.getElementById('dateDepot').value,
-    montant:+document.getElementById('montant').value,
-    date1:document.getElementById('date1').value,
-    date2:document.getElementById('date2').value,
-    statut:document.getElementById('statut').value
+  let obj = {
+    fournisseur: document.getElementById('fournisseur').value.trim(),
+    numero: document.getElementById('numero').value,
+    dateFacturation: document.getElementById('dateFacturation').value,
+    montant: +document.getElementById('montant').value,
+    montantPaye: +document.getElementById('montantPaye').value,
+    datePaiement: document.getElementById('datePaiement').value,
   };
-  if(editingIndexA!==null){
-    achats[editingIndexA]=obj;
-    showNotification('Achat modifié');
+  obj.statut = obj.montantPaye >= obj.montant ? 'reglee' : obj.montantPaye > 0 ? 'partielle' : 'arreglee';
+  if(editIndex !== null){
+    achats[editIndex] = obj;
+    showNotification("Achat modifié");
   } else {
     achats.push(obj);
-    showNotification('Achat ajouté');
+    showNotification("Achat ajouté");
   }
   localStorage.setItem('achats', JSON.stringify(achats));
   document.getElementById('achatForm').style.display='none';
   afficherAchats();
 }
 
-// Affichage du tableau + stat
 function afficherAchats(){
-  const tbody = document.getElementById('tableBodyA');
-  tbody.innerHTML='';
-  achats.forEach((a,i)=>{
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+  achats.forEach((a, i) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><a href="fournisseur.html?nom=${encodeURIComponent(a.fournisseur)}">${a.fournisseur}</a></td>
+      <td onclick="goToFournisseur('${a.fournisseur}')">${a.fournisseur}</td>
       <td>${a.numero}</td>
-      <td>${a.dateDepot}</td>
-      <td>${a.montant.toLocaleString('fr-FR')}</td>
-      <td>${a.date1}</td>
-      <td>${a.date2}</td>
-      <td class="status-${a.statut.replace(' ', '\\\\ ')}">${a.statut}</td>
+      <td>${a.dateFacturation}</td>
+      <td>${formatMontant(a.montant)}</td>
+      <td>${formatMontant(a.montantPaye)}</td>
+      <td>${a.datePaiement}</td>
+      <td class="status-${a.statut}">${a.statut === 'reglee' ? 'Réglée' : a.statut === 'partielle' ? 'Partielle' : 'Ar-réglée'}</td>
       <td class="action-icons">
         <i class="fas fa-edit" onclick="openForm(${i})"></i>
-        <i class="fas fa-trash" onclick="supprimerA(${i})"></i>
-      </td>`;
+        <i class="fas fa-trash" onclick="supprimer(${i})"></i>
+      </td>
+    `;
     tbody.appendChild(tr);
   });
-  majStatsA();
 }
 
-// Suppression
-function supprimerA(i){
-  achats.splice(i,1);
-  localStorage.setItem('achats', JSON.stringify(achats));
-  showNotification('Achat supprimé');
-  afficherAchats();
+function formatMontant(n){
+  return n.toLocaleString("fr-FR");
 }
 
-// Statistiques
-function majStatsA(){
-  const total = achats.length;
-  const montant = achats.reduce((s,a)=>s+a.montant,0);
-  const paye = achats.filter(a=>a.statut==='Réglée').reduce((s,a)=>s+a.montant,0)
-              + achats.filter(a=>a.statut==='Partielle').reduce((s,a)=>s+a.montant/2,0);
-  const restant = montant-paye;
-  const pourcent = montant? Math.round(paye/montant*100) : 0;
-  document.getElementById('statsGlobales').innerHTML = `
-    <div class="statBox"><h4>Total achats</h4><p>${total}</p></div>
-    <div class="statBox"><h4>Montant</h4><p>${montant.toLocaleString('fr-FR')}</p></div>
-    <div class="statBox"><h4>Payé</h4><p>${paye.toLocaleString('fr-FR')}</p></div>
-    <div class="statBox"><h4>Restant</h4><p>${restant.toLocaleString('fr-FR')}</p></div>
-    <div class="statBox"><h4>% Réglé</h4><p>${pourcent}%</p></div>`;
-}
-
-// Filtres
 function rechercherFournisseur(){
-  const q = document.getElementById('searchInputA').value.toLowerCase();
-  document.querySelectorAll('#tableBodyA tr').forEach(tr=>{
-    tr.style.display = tr.cells[0].innerText.toLowerCase().includes(q)?'':'none';
-  });
-}
-function filtrerParPeriodeA(){
-  const d1 = document.getElementById('dateDebutA').value;
-  const d2 = document.getElementById('dateFinA').value;
-  document.querySelectorAll('#tableBodyA tr').forEach(tr=>{
-    const d=tr.cells[2].innerText;
-    tr.style.display = (!d1||d>=d1)&&(!d2||d<=d2)?'':'none';
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  document.querySelectorAll('#tableBody tr').forEach(tr => {
+    tr.style.display = tr.cells[0].innerText.toLowerCase().includes(q) ? '' : 'none';
   });
 }
 
-// Liste fournisseurs
-function ouvrirListeFournisseurs(){
-  const setF = new Set(achats.map(a=>a.fournisseur));
-  const ul=document.getElementById('clientsListA'); ul.innerHTML='';
-  Array.from(setF).sort().forEach(n=>{
-    const li=document.createElement('li');
-    li.innerHTML = `<button class="btn" onclick="filtrerParFournisseur('${n}')">${n}</button>`;
-    ul.appendChild(li);
-  });
-  document.getElementById('clientsModal').style.display='block';
-}
-function fermerListeFournisseurs(){
-  document.getElementById('clientsModal').style.display='none';
-  afficherAchats();
-}
-function filtrerParFournisseur(n){
-  document.querySelectorAll('#tableBodyA tr').forEach(tr=>{
-    tr.style.display = tr.cells[0].innerText===n?'':'none';
-  });
-  fermerListeFournisseurs();
+function supprimer(i){
+  if(confirm("Supprimer cet achat ?")){
+    achats.splice(i,1);
+    localStorage.setItem('achats', JSON.stringify(achats));
+    showNotification("Achat supprimé");
+    afficherAchats();
+  }
 }
 
-// Exports (idem à ventes)
-function exportExcelAchat(){ showNotification('Export Excel pas encore codé'); }
-function exportPDFAchat(){ showNotification('Export PDF pas encore codé'); }
-function viderTableauAchat(){ if(confirm('Tout supprimer ?')){ achats=[]; localStorage.removeItem('achats'); afficherAchats(); majStatsA(); }}
-function deconnexion(){ window.location.href='index.html'; }
+function viderTableau(){
+  if(confirm("Effacer tous les achats ?")){
+    achats = [];
+    localStorage.removeItem('achats');
+    afficherAchats();
+    showNotification("Tableau vidé");
+  }
+}
 
-// Initialisation
+function exportExcel(){
+  let wb = XLSX.utils.book_new();
+  let ws = XLSX.utils.json_to_sheet(achats);
+  XLSX.utils.book_append_sheet(wb, ws, "Achats");
+  XLSX.writeFile(wb, "achats.xlsx");
+}
+
+function exportPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let y = 10;
+  doc.setFontSize(12);
+  achats.forEach((a, i) => {
+    doc.text(`Fournisseur: ${a.fournisseur} | Num: ${a.numero} | TTC: ${a.montant} | Payé: ${a.montantPaye}`, 10, y += 10);
+  });
+  doc.save("achats.pdf");
+}
+
+function goToFournisseur(f){
+  localStorage.setItem("fournisseurSelected", f);
+  window.location.href = "fournisseur.html";
+}
+
 afficherAchats();
 </script>
 </body>
