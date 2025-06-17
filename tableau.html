@@ -117,6 +117,11 @@
   <hr style="border: 1px solid #333; margin: 15px 0;">
 
   <div class="menu-item" onclick="ouvrirListeClients()"><i class="fas fa-users"></i> Gérer les clients</div>
+<div class="menu-item" onclick="document.getElementById('excelInput').click()">
+  <i class="fas fa-file-import"></i>
+  Importer Excel
+</div>
+<input type="file" id="excelInput" accept=".xlsx, .xls" style="display: none;">
 
   <div class="menu-item" id="achatBtn">
   <i class="fas fa-shopping-cart"></i>
@@ -161,7 +166,7 @@
 <div class="form-popup" id="factureForm">
   <h3 id="formTitle">Nouvelle facture</h3>
   <input type="text" id="client" placeholder="Nom du client">
-  <input type="text" id="numero" readonly placeholder="Numéro auto">
+  <input type="text" id="numero" placeholder="Numéro auto">
   <input type="date" id="dateDepot">
   <input type="number" id="montant" placeholder="Montant">
   <input type="number" id="paye" placeholder="Montant payé">
@@ -267,12 +272,14 @@ function afficherTableau(){
 
 function supprimer(i){
   factures.splice(i,1);
+  localStorage.setItem('factures', JSON.stringify(factures));
   showNotification('Facture supprimée');
   afficherTableau();
 }
 
 function epingler(i){
   pinnedSet.has(i)?pinnedSet.delete(i):pinnedSet.add(i);
+  
   afficherTableau();
 }
 
@@ -442,6 +449,111 @@ function filtrerParClient(nom) {
 }
 
 </script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+document.getElementById('excelInput').addEventListener('change', function (e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function (event) {
+    const data = new Uint8Array(event.target.result);
+    const workbook = XLSX.read(data, { type: 'array' });
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+    const json = XLSX.utils.sheet_to_json(firstSheet);
+
+    let factures = JSON.parse(localStorage.getItem('factures')) || [];
+    let numero = getNextFactureNumber(factures);
+
+    json.forEach(row => {
+  const montant = parseFloat(row['Montant']) || 0;
+  const paye = parseFloat(row['Montant payé']) || 0;
+  const statut = paye >= montant ? 'payee' : (paye > 0 ? 'partielle' : 'impayee');
+
+  const facture = {
+    numero: `FA${numero++}`,
+    client: row['Client'] || 'Client inconnu',
+    dateDepot: row['Date de dépôt'] || '',
+    montant,
+    paye,
+    datePaiement: row['Date de paiement'] || '',
+    compte: row['Compte'] || '',
+    statut,
+    pin: false
+  };
+
+  factures.push(facture);
+  ajouterFactureAuTableau(facture);
+});
+
+
+    localStorage.setItem('factures', JSON.stringify(factures));
+    showNotification('Factures importées avec succès !');
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+// Calcule le prochain numéro de facture
+function getNextFactureNumber(factures) {
+  const nums = factures.map(f => parseInt(f.numero.replace('FA', '')) || 0);
+  const max = nums.length ? Math.max(...nums) : 25000;
+  return max + 1;
+}
+
+// Ajoute une ligne dans le tableau avec toutes les actions
+function ajouterFactureAuTableau(facture) {
+  const tbody = document.querySelector("tbody");
+  if (!tbody) return;
+
+  const tr = document.createElement("tr");
+  if (facture.pin) tr.classList.add("pinned");
+
+  tr.innerHTML = `
+    <td><a href="#" class="client-link">${facture.client}</a></td>
+    <td>${facture.numero}</td>
+    <td>${facture.dateDepot}</td>
+    <td>${formatMontant(facture.montant)}</td>
+    <td>${formatMontant(facture.paye)}</td>
+    <td>${facture.datePaiement || '-'}</td>
+    <td>${facture.compte}</td>
+    <td class="status-${facture.statut}">${getStatutLabel(facture.statut)}</td>
+    <td class="action-icons">
+      <i class="fas fa-thumbtack" onclick="epinglerFacture('${facture.numero}')"></i>
+      <i class="fas fa-edit" onclick="modifierFacture('${facture.numero}')"></i>
+      <i class="fas fa-trash" onclick="supprimerFacture('${facture.numero}', this)"></i>
+    </td>
+  `;
+
+  // Événement redirection
+  tr.querySelector('.client-link').addEventListener('click', function (e) {
+    e.preventDefault();
+    localStorage.setItem('clientSelected', facture.client);
+    window.location.href = 'client.html';
+  });
+
+  tbody.appendChild(tr);
+}
+
+// Utilitaires
+function formatMontant(val) {
+  return Number(val).toLocaleString('fr-FR');
+}
+
+function getStatutLabel(statut) {
+  return statut === 'payee' ? 'Payée' :
+         statut === 'partielle' ? 'Partielle' : 'Impayée';
+}
+
+function showNotification(text) {
+  const notif = document.createElement('div');
+  notif.className = 'notification';
+  notif.innerText = text;
+  document.body.appendChild(notif);
+  setTimeout(() => notif.remove(), 3000);
+}
+</script>
+
 <!-- Liste des clients -->
 <div id="clientsModal" class="form-popup" style="display:none; width: 300px; max-height: 400px; overflow-y: auto;">
   <h3 style="margin-bottom: 10px;">Liste des clients</h3>
