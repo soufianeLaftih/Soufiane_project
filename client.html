@@ -128,15 +128,39 @@
 .alert-icon:hover {
   transform: scale(1.2);
 }
+#clientTools button {
+  background: #2a2a39;
+  color: #00adb5;
+  border: 1px solid #00adb5;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+#clientTools button:hover {
+  background: #00adb5;
+  color: #fff;
+}
 
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<!-- jsPDF pour export PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<!-- SheetJS pour export Excel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 </head>
 <body>
 
 <a href="tableau.html" class="back-btn"><i class="fas fa-arrow-left"></i>Retour au tableau</a>
 <h1>Détails du client : <span id="clientName"></span></h1>
+
+
+<div id="clientTools" style="margin-bottom: 25px; display: flex; gap: 10px; flex-wrap: wrap;">
+  <button onclick="exporterClientExcel()">📊 Exporter Excel</button>
+</div>
+
 
 <div class="stats">
   <div class="stat" style="--n:0;"><h2>Total factures</h2><p id="totalFactures"></p></div>
@@ -163,6 +187,8 @@
   <thead><tr><th>Numéro</th><th>Date dépôt</th><th>Montant</th><th>Payé</th><th>Reste</th><th>Compte</th><th>Date paiement</th><th>Statut</th></tr></thead>
   <tbody id="tableBody"></tbody>
 </table>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
 
 <script>
   // Récupération du client
@@ -413,7 +439,29 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 </script>
+<script>
+function exporterClientExcel() {
+  const client = document.getElementById('clientName').innerText;
+  const factures = JSON.parse(localStorage.getItem("factures") || "[]").filter(f => f.client === client);
 
+  const data = factures.map(f => ({
+    "Numéro": f.numero,
+    "Date Dépôt": f.dateDepot,
+    "Montant": f.montant,
+    "Payé": f.paye,
+    "Reste": f.montant - f.paye,
+    "Compte": f.compte,
+    "Statut": f.statut
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(data);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Factures");
+
+  XLSX.writeFile(workbook, `Factures_${client}.xlsx`);
+}
+
+</script>
 
 </body>
 </html>
