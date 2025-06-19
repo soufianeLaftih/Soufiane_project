@@ -11,7 +11,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 <style>
   * { box-sizing: border-box; margin:0; padding:0; font-family:'Roboto',sans-serif; }
-  body { background:#1e1e2f; color:#f0f0f0; padding:20px; overflow-auto; }
+  body { background:#1e1e2f; color:#f0f0f0; padding:20px; overflow : auto;}
   .back-btn {
     display:inline-block; margin-bottom:20px;
     color:#00adb5; text-decoration:none; font-weight:bold;
@@ -51,7 +51,87 @@
   .payee{ color:#4CAF50; font-weight:bold; }
   .partielle{ color:#FFB300; }
   .impayee{ color:#E53935; }
+  .floating-form {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: #2a2a39;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.6);
+  z-index: 1000;
+  display: none;
+  width: 300px;
+  animation: fadeIn 0.4s ease forwards;
+}
+.floating-form h3 {
+  margin-bottom: 10px;
+  font-size: 1.1em;
+  color: #00adb5;
+}
+.floating-form input {
+  width: 100%;
+  padding: 8px;
+  margin: 10px 0;
+  background: #1e1e2f;
+  border: 1px solid #555;
+  color: #fff;
+  border-radius: 5px;
+}
+.floating-form button {
+  background: #00adb5;
+  color: white;
+  padding: 8px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-right: 10px;
+}
+.overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  display: none;
+}
+.paiement-btn {
+  background: none;
+  color: #0eb33f;
+  border: 1px solid #0eb33f;
+  padding: 5px 8px;
+  font-size: 0.8em;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.tooltip {
+  position: absolute;
+  background: #2a2a39;
+  color: #FFB300;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.9em;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  z-index: 1000;
+  max-width: 250px;
+  display: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.alert-icon {
+  color: #ff0000; /* Jaune, ou tu peux choisir une couleur d'alerte */
+  font-size: 0.9em;
+  margin-left: 10px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.alert-icon:hover {
+  transform: scale(1.2);
+}
+
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
 </head>
 <body>
 
@@ -137,16 +217,203 @@
 
   // Tableau détaillé
   const tbody=document.getElementById('tableBody');
-  data.forEach(f=>{
-    const reste=f.montant-f.paye;
-    const tr=document.createElement('tr');
-    tr.innerHTML = `<td>${f.numero}</td><td>${f.dateDepot}</td><td>${f.montant.toLocaleString('fr-FR')}</td>
-      <td>${f.paye.toLocaleString('fr-FR')}</td><td>${reste.toLocaleString('fr-FR')}</td>
-      <td>${f.compte}</td><td>${f.datePaiement||'-'}</td>
-      <td class="${f.statut}">${f.statut==='payee'?'Payée':f.statut==='partielle'?'Partielle':'Impayée'}</td>`;
-    tbody.appendChild(tr);
-  });
+data.forEach(f => {
+  const reste = f.montant - f.paye;
+  const tr = document.createElement('tr');
+
+  // Ajouter l'icône d'alerte si la facture a un historique de paiements partiels
+  const alertIcon = (f.statut === 'payee' && f.paiements && f.paiements.length > 0)
+    ? `<a href="historique_facture.html?factureNumero=${f.numero}" title="Voir l’historique">
+         <i class="fas fa-bell alert-icon" style="color: orange;"></i>
+       </a>`
+    : '';
+
+
+
+  // Si la facture est partielle, on ajoute un bouton
+  const boutonPaiement = (f.statut === 'partielle')
+    ? `<button class="paiement-btn" onclick="ouvrirForm('${f.numero}')">+ Paiement</button>`
+    : '';
+
+  // Texte du statut + bouton si nécessaire
+  const statutTexte = f.statut === 'payee' ? 'Payée'
+                     : f.statut === 'partielle' ? 'Partielle'
+                     : 'Impayée';
+
+  tr.innerHTML = `
+    <td>${f.numero}</td>
+    <td>${f.dateDepot}</td>
+    <td>${f.montant.toLocaleString('fr-FR')}</td>
+    <td>${f.paye.toLocaleString('fr-FR')}</td>
+    <td>${reste.toLocaleString('fr-FR')}</td>
+    <td>${f.compte}</td>
+    <td class="hoverable-date" data-numero="${f.numero}">${f.datePaiement || '-'}</td>
+    <td class="${f.statut}">${statutTexte} ${alertIcon} ${boutonPaiement}</td>
+  `;
+
+  tbody.appendChild(tr);
+});
+
+  let factureActive = null;
+
+function ouvrirForm(numero) {
+  factureActive = numero;
+  document.getElementById('overlay').style.display = 'block';
+  document.getElementById('paymentForm').style.display = 'block';
+}
+
+function fermerForm() {
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('paymentForm').style.display = 'none';
+  document.getElementById('paiementDate').value = '';
+  document.getElementById('paiementMontant').value = '';
+}
+
+function validerPaiement() {
+  const date = document.getElementById('paiementDate').value;
+  const montant = parseFloat(document.getElementById('paiementMontant').value);
+
+  if (!date || isNaN(montant) || montant <= 0) {
+    alert("Veuillez remplir les deux champs correctement.");
+    return;
+  }
+
+  const all = JSON.parse(localStorage.getItem('factures') || '[]');
+  const index = all.findIndex(f => f.numero === factureActive);
+  if (index !== -1) {
+    if (!all[index].paiements) all[index].paiements = [];
+    all[index].paiements.push({ date, montant });
+    all[index].paye += montant;
+
+    // recalcul du statut
+    if (all[index].paye >= all[index].montant) {
+      all[index].statut = 'payee';
+      all[index].datePaiement = date;
+    } else if (!all[index].payeInitial) {
+  all[index].payeInitial = all[index].paye;
+}
+else {
+      all[index].statut = 'partielle';
+    }
+
+    localStorage.setItem('factures', JSON.stringify(all));
+    location.reload();
+  }
+}
+const tooltip = document.getElementById('tooltip');
+
+// Quand on survole une cellule avec la classe "hoverable-date"
+document.addEventListener('mouseover', function(e) {
+  if (e.target.classList.contains('hoverable-date')) {
+    const numero = e.target.dataset.numero;
+    const facture = all.find(f => f.numero === numero);
+    if (!facture) return;
+
+    // Construire le contenu du tooltip
+    let html = '<strong>Historique des paiements :</strong><br>';
+    let paiements = [];
+
+    // 1er paiement = paiement initial
+    if (facture.datePaiement) {
+      paiements.push({ date: facture.datePaiement, montant: facture.payeInitial || 0 });
+    }
+
+    // paiements partiels ajoutés
+    if (facture.paiements && facture.paiements.length > 0) {
+      paiements = paiements.concat(facture.paiements);
+    }
+
+    // Affichage
+    if (paiements.length === 0) {
+      html += "<em>Aucun paiement enregistré.</em>";
+    } else {
+      paiements.forEach((p, i) => {
+        html += `➤ ${i + 1}ᵉ paiement : ${p.date} - ${p.montant.toLocaleString('fr-FR')}<br>`;
+      });
+    }
+
+    tooltip.innerHTML = html;
+    tooltip.style.display = 'block';
+
+    const rect = e.target.getBoundingClientRect();
+    tooltip.style.top = `${rect.bottom + window.scrollY + 5}px`;
+    tooltip.style.left = `${rect.left + window.scrollX}px`;
+    tooltip.style.opacity = '1';
+    tooltip.style.transform = 'translateY(0px)';
+  }
+});
+
+document.addEventListener('mouseout', function(e) {
+  if (e.target.classList.contains('hoverable-date')) {
+    tooltip.style.display = 'none';
+    tooltip.innerHTML = '';
+  }
+});
+
 </script>
+<div class="overlay" id="overlay"></div>
+<div class="floating-form" id="paymentForm">
+  <h3>Ajouter un paiement</h3>
+  <input type="date" id="paiementDate" required>
+  <input type="number" id="paiementMontant" placeholder="Montant payé" required>
+  <div>
+    <button onclick="validerPaiement()">Valider</button>
+    <button onclick="fermerForm()">Annuler</button>
+  </div>
+</div>
+<div id="tooltip" class="tooltip"></div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const tooltip = document.getElementById('tooltip');
+
+  // ✅ Affichage des paiements sur clic
+  document.addEventListener('click', function(e) {
+    // Si clic sur la cellule "date paiement"
+    if (e.target.classList.contains('hoverable-date')) {
+      const numero = e.target.dataset.numero;
+      const all = JSON.parse(localStorage.getItem('factures') || '[]');
+      const facture = all.find(f => f.numero === numero);
+      if (!facture) return;
+
+      let html = '<strong>🧾 Historique des paiements :</strong><br><br>';
+      let paiements = [];
+
+      // Paiement initial
+      if (facture.datePaiement) {
+        const initial = facture.payeInitial || facture.paye || 0;
+        paiements.push({ date: facture.datePaiement, montant: initial });
+      }
+
+      // Paiements partiels ajoutés
+      if (facture.paiements && facture.paiements.length > 0) {
+        paiements = paiements.concat(facture.paiements);
+      }
+
+      if (paiements.length === 0) {
+        html += "<em>Aucun paiement enregistré.</em>";
+      } else {
+        paiements.forEach((p, i) => {
+          html += `➤ <strong>${i + 1}ᵉ paiement :</strong> ${p.date} — <strong>${p.montant.toLocaleString('fr-FR')} DH</strong><br>`;
+        });
+      }
+
+      tooltip.innerHTML = html;
+      tooltip.style.display = 'block';
+
+      const rect = e.target.getBoundingClientRect();
+      tooltip.style.top = `${rect.bottom + window.scrollY + 10}px`;
+      tooltip.style.left = `${rect.left + window.scrollX}px`;
+    } else {
+      // Clic ailleurs = on ferme le tooltip
+      tooltip.style.display = 'none';
+      tooltip.innerHTML = '';
+      currentTooltip = null;
+    }
+  });
+});
+
+</script>
+
 
 </body>
 </html>
