@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Historique de la Facture</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    body {
+      background: #1e1e2f;
+      color: #f0f0f0;
+      font-family: 'Roboto', sans-serif;
+      padding: 20px;
+    }
+
+    a.back-btn {
+      color: #00adb5;
+      text-decoration: none;
+      margin-bottom: 20px;
+      display: inline-block;
+    }
+
+    .card {
+      background: #2a2a39;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 25px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.5);
+    }
+
+    h1, h2 {
+      margin-bottom: 15px;
+    }
+
+    .entry {
+      background: #333;
+      padding: 10px 15px;
+      border-left: 4px solid #00adb5;
+      margin-bottom: 10px;
+      border-radius: 5px;
+    }
+
+    .entry h3 {
+      margin: 0 0 5px 0;
+      font-size: 1em;
+      color: #00adb5;
+    }
+
+    .entry p {
+      margin: 3px 0;
+      font-size: 0.95em;
+    }
+
+    .no-history {
+      color: #aaa;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+  <a href="javascript:history.back()" class="back-btn">
+    <i class="fas fa-arrow-left"></i> Retour
+  </a>
+
+  <h1>Historique de la Facture : <span id="factureNum"></span></h1>
+
+  <div class="card">
+    <h2>Informations générales</h2>
+    <p><strong>Client :</strong> <span id="clientName"></span></p>
+    <p><strong>Montant total :</strong> <span id="montantTotal"></span> MAD</p>
+    <p><strong>Montant payé :</strong> <span id="montantPaye"></span> MAD</p>
+    <p><strong>Statut :</strong> <span id="statutFacture"></span></p>
+    <p><strong>Compte :</strong> <span id="compteFacture"></span></p>
+  </div>
+
+  <div class="card">
+    <h2>Historique des paiements</h2>
+    <div id="paiementHistorique"></div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const numero = params.get("factureNumero");
+    document.getElementById("factureNum").innerText = numero;
+
+    const factures = JSON.parse(localStorage.getItem("factures") || "[]");
+    const f = factures.find(f => f.numero == numero);
+
+    if (!f) {
+      document.body.innerHTML = "<h2>Cette facture n'existe pas.</h2>";
+      return;
+    }
+
+    document.getElementById("clientName").innerText = f.client;
+    document.getElementById("montantTotal").innerText = f.montant.toLocaleString("fr-FR");
+    document.getElementById("montantPaye").innerText = f.paye.toLocaleString("fr-FR");
+    document.getElementById("statutFacture").innerText =
+      f.statut === "payee" ? "Payée" : f.statut === "partielle" ? "Partielle" : "Impayée";
+    document.getElementById("compteFacture").innerText = f.compte;
+
+    const container = document.getElementById("paiementHistorique");
+    let entries = [];
+
+    // Paiement initial
+    if (f.datePaiement && f.payeInitial) {
+      entries.push({
+        titre: "Paiement initial",
+        date: f.datePaiement,
+        montant: f.payeInitial
+      });
+    }
+
+    // Paiements successifs
+    if (f.paiements && f.paiements.length > 0) {
+      f.paiements.forEach((p, i) => {
+        entries.push({
+          titre: `Paiement ${i + 1}`,
+          date: p.date,
+          montant: p.montant
+        });
+      });
+    }
+
+    if (entries.length === 0) {
+      container.innerHTML = '<p class="no-history">Aucun paiement enregistré pour cette facture.</p>';
+    } else {
+      entries.forEach(entry => {
+        const div = document.createElement("div");
+        div.className = "entry";
+        div.innerHTML = `
+          <h3>${entry.titre}</h3>
+          <p><strong>Date :</strong> ${entry.date}</p>
+          <p><strong>Montant :</strong> ${entry.montant.toLocaleString('fr-FR')} MAD</p>
+        `;
+        container.appendChild(div);
+      });
+    }
+  </script>
+
+</body>
+</html>
