@@ -166,31 +166,25 @@ function validerPaiement() {
   if (index !== -1) {
     if (!achats[index].paiements) achats[index].paiements = [];
 
-const ancienPaye = achats[index].montantPaye || 0;
+    const ancienPaye = achats[index].montantPaye || 0;
+    if (!achats[index].montantPayeInitial) {
+      achats[index].montantPayeInitial = ancienPaye;
+    }
 
-if (!achats[index].montantPayeInitial) {
-  achats[index].montantPayeInitial = ancienPaye;
-}
+    achats[index].montantPaye += montant;
+    achats[index].paiements.push({ date, montant });
 
-achats[index].montantPaye += montant;
-achats[index].paiements.push({ date, montant });
+    if (achats[index].montantPaye >= achats[index].montant) {
+      achats[index].statut = 'reglee';
+      achats[index].datePaiement = date;
+    } else {
+      achats[index].statut = 'partielle';
+    }
 
-// recalcul du statut
-if (achats[index].montantPaye >= achats[index].montant) {
-  achats[index].statut = 'reglee';
-  achats[index].datePaiement = date;
-} else {
-  achats[index].statut = 'partielle';
-}
-
-localStorage.setItem("achats", JSON.stringify(achats));
-location.reload();
-
+    localStorage.setItem("achats", JSON.stringify(achats));
+    location.reload();
   }
 }
-
-
-
 
 function formatMontant(n){
   return n.toLocaleString("fr-FR");
@@ -235,28 +229,37 @@ achatsF.forEach(a => {
   tbody.appendChild(tr);
 });
 
+// === Tooltip historique des paiements + montant restant ===
 const tooltip = document.getElementById('tooltip');
 document.addEventListener('click', function(e) {
   if (e.target.classList.contains('hoverable-date') || e.target.classList.contains('alert-icon')) {
     const numero = e.target.dataset.numero;
     const achat = achats.find(a => a.numero === numero);
     if (!achat) return;
+
     let html = '<strong>🧾 Historique des paiements :</strong><br><br>';
     let paiements = [];
+
     if (achat.datePaiement) {
       const initial = achat.montantPayeInitial || achat.montantPaye || 0;
       paiements.push({ date: achat.datePaiement, montant: initial });
     }
+
     if (achat.paiements && achat.paiements.length > 0) {
       paiements = paiements.concat(achat.paiements);
     }
+
     if (paiements.length === 0) {
       html += "<em>Aucun paiement enregistré.</em>";
     } else {
       paiements.forEach((p, i) => {
-        html += `➤ <strong>${i + 1}ᵉ paiement :</strong> ${p.date} — <strong>${p.montant.toLocaleString('fr-FR')} DH</strong><br>`;
+        html += `➤ <strong>${i + 1}ᵉ paiement :</strong> ${p.date} — <strong>${formatMontant(p.montant)} DH</strong><br>`;
       });
+
+      const reste = achat.montant - achat.montantPaye;
+      html += `<br><strong>💰 Montant restant :</strong> ${formatMontant(reste)} DH`;
     }
+
     tooltip.innerHTML = html;
     tooltip.style.display = 'block';
     const rect = e.target.getBoundingClientRect();
@@ -268,6 +271,7 @@ document.addEventListener('click', function(e) {
   }
 });
 </script>
+
 
 </body>
 </html>
