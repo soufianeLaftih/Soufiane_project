@@ -306,26 +306,30 @@ function validerPaiement() {
 
   const all = JSON.parse(localStorage.getItem('factures') || '[]');
   const index = all.findIndex(f => f.numero === factureActive);
-  if (index !== -1) {
-    if (!all[index].paiements) all[index].paiements = [];
-    all[index].paiements.push({ date, montant });
+      if (!all[index].paiements) all[index].paiements = [];
+
+    const ancienPaye = all[index].paye; // ✅ capturer l'ancien montant
+
+    if (!all[index].payeInitial) {
+      all[index].payeInitial = ancienPaye; // ✅ enregistrer l'initial AVANT modification
+    }
+
     all[index].paye += montant;
+    all[index].paiements.push({ date, montant });
 
     // recalcul du statut
     if (all[index].paye >= all[index].montant) {
       all[index].statut = 'payee';
       all[index].datePaiement = date;
-    } else if (!all[index].payeInitial) {
-  all[index].payeInitial = all[index].paye;
-}
-else {
+    } else {
       all[index].statut = 'partielle';
     }
+
 
     localStorage.setItem('factures', JSON.stringify(all));
     location.reload();
   }
-}
+
 const tooltip = document.getElementById('tooltip');
 
 // Quand on survole une cellule avec la classe "hoverable-date"
