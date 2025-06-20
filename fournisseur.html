@@ -15,13 +15,83 @@
     .stat h3{margin-bottom:10px;font-size:18px;}
     .stat p{font-size:24px;font-weight:bold;}
     table{width:100%;border-collapse:collapse;background:#29293d;}
-    th,td{padding:12px;border:1px solid #444;text-align:left;}
+    th,td{padding:12px;border:1px solid #444;text-align:left;position:relative;}
     th{background:#333;}
     tr:nth-child(even){background:#32324d;}
     .status-reglee{color:#4CAF50;font-weight:bold;}
     .status-partielle{color:#FFB300;}
     .status-arreglee{color:#E53935;}
     #retour{display:block;margin-top:30px;text-align:center;color:#00adb5;text-decoration:none;font-weight:bold;}
+    .paiement-btn {
+      background: none;
+      color: #0eb33f;
+      border: 1px solid #0eb33f;
+      padding: 5px 8px;
+      font-size: 0.8em;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .floating-form {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: #2a2a39;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.6);
+      z-index: 1000;
+      display: none;
+      width: 300px;
+    }
+    .floating-form h3 {
+      margin-bottom: 10px;
+      font-size: 1.1em;
+      color: #00adb5;
+    }
+    .floating-form input {
+      width: 100%;
+      padding: 8px;
+      margin: 10px 0;
+      background: #1e1e2f;
+      border: 1px solid #555;
+      color: #fff;
+      border-radius: 5px;
+    }
+    .floating-form button {
+      background: #00adb5;
+      color: white;
+      padding: 8px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    .overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+      display: none;
+    }
+    .alert-icon {
+      color: orange;
+      font-size: 0.9em;
+      margin-left: 8px;
+      cursor: pointer;
+    }
+    .tooltip {
+      position: absolute;
+      background: #2a2a39;
+      color: #FFB300;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 0.9em;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      z-index: 1000;
+      max-width: 250px;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -54,7 +124,78 @@
 
 <a href="achats.html" id="retour">← Retour aux achats</a>
 
+<div class="overlay" id="overlay"></div>
+<div class="floating-form" id="paymentForm">
+  <h3>Ajouter un paiement</h3>
+  <input type="date" id="paiementDate" required>
+  <input type="number" id="paiementMontant" placeholder="Montant payé" required>
+  <div>
+    <button onclick="validerPaiement()">Valider</button>
+    <button onclick="fermerForm()">Annuler</button>
+  </div>
+</div>
+<div class="tooltip" id="tooltip"></div>
+
 <script>
+let achatActif = null;
+
+function ouvrirForm(numero) {
+  achatActif = numero;
+  document.getElementById('overlay').style.display = 'block';
+  document.getElementById('paymentForm').style.display = 'block';
+}
+
+function fermerForm() {
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('paymentForm').style.display = 'none';
+  document.getElementById('paiementDate').value = '';
+  document.getElementById('paiementMontant').value = '';
+}
+
+function validerPaiement() {
+  const date = document.getElementById('paiementDate').value;
+  const montant = parseFloat(document.getElementById('paiementMontant').value);
+
+  if (!date || isNaN(montant) || montant <= 0) {
+    alert("Veuillez remplir les deux champs correctement.");
+    return;
+  }
+
+  const achats = JSON.parse(localStorage.getItem("achats") || "[]");
+  const index = achats.findIndex(a => a.numero === achatActif);
+  if (index !== -1) {
+    if (!achats[index].paiements) achats[index].paiements = [];
+
+const ancienPaye = achats[index].montantPaye || 0;
+
+if (!achats[index].montantPayeInitial) {
+  achats[index].montantPayeInitial = ancienPaye;
+}
+
+achats[index].montantPaye += montant;
+achats[index].paiements.push({ date, montant });
+
+// recalcul du statut
+if (achats[index].montantPaye >= achats[index].montant) {
+  achats[index].statut = 'reglee';
+  achats[index].datePaiement = date;
+} else {
+  achats[index].statut = 'partielle';
+}
+
+localStorage.setItem("achats", JSON.stringify(achats));
+location.reload();
+
+  }
+}
+
+
+
+
+function formatMontant(n){
+  return n.toLocaleString("fr-FR");
+}
+
 const fournisseur = localStorage.getItem("fournisseurSelected") || "";
 document.getElementById("nomFournisseur").textContent += fournisseur;
 const achats = JSON.parse(localStorage.getItem("achats") || "[]");
@@ -76,21 +217,56 @@ document.getElementById("pourcentagePaye").textContent = pourcentagePaye + "%";
 
 const tbody = document.getElementById("tableBody");
 achatsF.forEach(a => {
+  const alertIcon = (a.statut === 'reglee' && a.paiements && a.paiements.length > 0)
+    ? `<i class="fas fa-bell alert-icon" title="Voir historique" data-numero="${a.numero}"></i>` : '';
+
+  const boutonPaiement = a.statut === 'partielle'
+    ? `<button class="paiement-btn" onclick="ouvrirForm('${a.numero}')">+ Paiement</button>` : '';
+
   const tr = document.createElement("tr");
   tr.innerHTML = `
     <td>${a.numero}</td>
-    <td>${a.dateFacturation}</td>
+    <td class="hoverable-date" data-numero="${a.numero}">${a.dateFacturation}</td>
     <td>${formatMontant(a.montant)}</td>
     <td>${formatMontant(a.montantPaye)}</td>
-    <td>${a.datePaiement}</td>
-    <td class="status-${a.statut}">${a.statut === 'reglee' ? 'Payée' : a.statut === 'partielle' ? 'Partielle' : 'Impayée'}</td>
+    <td>${a.datePaiement || '-'}</td>
+    <td class="status-${a.statut}">${a.statut === 'reglee' ? 'Payée' : a.statut === 'partielle' ? 'Partielle' : 'Impayée'} ${alertIcon} ${boutonPaiement}</td>
   `;
   tbody.appendChild(tr);
 });
 
-function formatMontant(n){
-  return n.toLocaleString("fr-FR");
-}
+const tooltip = document.getElementById('tooltip');
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('hoverable-date') || e.target.classList.contains('alert-icon')) {
+    const numero = e.target.dataset.numero;
+    const achat = achats.find(a => a.numero === numero);
+    if (!achat) return;
+    let html = '<strong>🧾 Historique des paiements :</strong><br><br>';
+    let paiements = [];
+    if (achat.datePaiement) {
+      const initial = achat.montantPayeInitial || achat.montantPaye || 0;
+      paiements.push({ date: achat.datePaiement, montant: initial });
+    }
+    if (achat.paiements && achat.paiements.length > 0) {
+      paiements = paiements.concat(achat.paiements);
+    }
+    if (paiements.length === 0) {
+      html += "<em>Aucun paiement enregistré.</em>";
+    } else {
+      paiements.forEach((p, i) => {
+        html += `➤ <strong>${i + 1}ᵉ paiement :</strong> ${p.date} — <strong>${p.montant.toLocaleString('fr-FR')} DH</strong><br>`;
+      });
+    }
+    tooltip.innerHTML = html;
+    tooltip.style.display = 'block';
+    const rect = e.target.getBoundingClientRect();
+    tooltip.style.top = `${rect.bottom + window.scrollY + 10}px`;
+    tooltip.style.left = `${rect.left + window.scrollX}px`;
+  } else {
+    tooltip.style.display = 'none';
+    tooltip.innerHTML = '';
+  }
+});
 </script>
 
 </body>
