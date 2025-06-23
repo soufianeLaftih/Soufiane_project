@@ -127,6 +127,14 @@
   <i class="fas fa-shopping-cart"></i>
   <a href="achats.html">Gestion des Achats</a>
 </div>
+<!-- Lien vers la création d'un nouveau tableau -->
+<div class="menu-item" id="caisseBtn">
+  <i class="fas fa-cash-register"></i>
+  <a href="caisse.html">Gestion de la caisse</a>
+</div>
+
+
+
 </div>
 
 
@@ -496,10 +504,17 @@ document.getElementById('excelInput').addEventListener('change', function (e) {
 
 // Calcule le prochain numéro de facture
 function getNextFactureNumber(factures) {
+  // Récupère les numéros de facture existants (en supprimant le préfixe FA)
   const nums = factures.map(f => parseInt(f.numero.replace('FA', '')) || 0);
+  
+  // Si aucune facture n'existe, commence à FA25000
   const max = nums.length ? Math.max(...nums) : 25000;
+
+  // Retourne le prochain numéro de facture en incrémentant le max trouvé
   return max + 1;
 }
+
+
 
 // Ajoute une ligne dans le tableau avec toutes les actions
 function ajouterFactureAuTableau(facture) {
@@ -560,6 +575,18 @@ function showNotification(text) {
   <ul id="clientsList" style="list-style: none; padding-left: 0;"></ul>
   <button class="btn" onclick="fermerListeClients()">Fermer</button>
 </div>
+<script>
+function creerNouveauTableau() {
+  const nom = prompt("Entrez le nom du nouveau tableau :");
+  if (!nom) return;
+
+  const pageName = nom.toLowerCase().replace(/\s+/g, '-') + ".html";
+
+  // Redirige vers une page vierge que tu dois préparer
+  window.location.href = pageName;
+}
+
+</script>
 
 </body>
 </html>
