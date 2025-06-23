@@ -75,8 +75,15 @@
   <input type="number" id="montant" placeholder="Montant DH">
   <input type="text" id="commentaire" placeholder="Commentaire">
   <button class="btn" onclick="enregistrer()">Enregistrer</button>
-</div>
+    <button class="btn" onclick="annuler()">Annuler</button>
 
+</div>
+<script>
+  function annuler(){
+    let form = document.getElementById("form");
+    form.style.display="none";
+  }
+</script>
 <script>
 let caisse = JSON.parse(localStorage.getItem('caisse') || '[]');
 let editIndex = null;
