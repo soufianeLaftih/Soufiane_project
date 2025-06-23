@@ -35,7 +35,16 @@
     .form-popup .btn{background:#00adb5;color:#fff;padding:12px;border:none;border-radius:5px;font-weight:bold;cursor:pointer;}
     .notification{position:fixed;top:20px;right:20px;background:#323232;color:#fff;padding:15px 20px;border-radius:5px;animation:fadeInOut 3s ease forwards;z-index:1002;}
     @keyframes fadeInOut{0%{opacity:0;transform:translateY(-20px);}10%,90%{opacity:1;}100%{opacity:0;transform:translateY(-20px);}}
-  </style>
+ .menu-item a {
+  text-decoration: none;
+  color: inherit;
+  font-weight: bold;
+}
+.menu-item:hover {
+  background-color: #2a2a2a;
+  transform: translateX(5px);
+}
+ </style>
 </head>
 <body>
 
@@ -46,6 +55,11 @@
   <div class="menu-item" onclick="exportPDF()"><i class="fas fa-file-pdf"></i> Exporter PDF</div>
   <div class="menu-item" onclick="viderTableau()"><i class="fas fa-trash"></i> Vider tableau</div>
   <div class="menu-item" onclick="window.location.href='tableau.html'"><i class="fas fa-arrow-left"></i> Retour Ventes</div>
+  <div class="menu-item" id="caisseBtn">
+  <i class="fas fa-cash-register"></i>
+  <a href="caisse.html">Gestion de la caisse</a>
+</div>
+
 </div>
 
 <button id="slideToggle" onclick="toggleSlide()"><i class="fas fa-bars"></i></button>
