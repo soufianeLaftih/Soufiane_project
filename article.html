@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Détails de l'Article</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:'Roboto',sans-serif;}
+    body{display:flex;background:#1e1e2f;color:#f0f0f0;height:100vh;overflow:hidden;}
+    #slideMenu{width:250px;background:#121212;padding:20px;position:fixed;left:0;top:0;height:100%;z-index:999;transition:transform .3s;}
+    #slideMenu.hidden{transform:translateX(-100%);}
+    #slideToggle{position:fixed;bottom:20px;right:20px;background:#333;color:#fff;border:none;padding:12px;cursor:pointer;z-index:1000;border-radius:5px;}
+    #mainContent{margin-left:250px;padding:30px;width:100%;transition:margin-left .3s;height:100%;overflow:auto;}
+    #slideMenu.hidden~#mainContent{margin-left:0;}
+    .menu-item{color:#fff;padding:15px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:color .2s;}
+    .menu-item a{text-decoration:none;color:inherit;}
+    .menu-item:hover{color:#00adb5;background:#2a2a2a;transform:translateX(5px);}
+
+    table{width:100%;border-collapse:collapse;background:#29293d;margin-top:10px;}
+    th,td{padding:12px;border:1px solid #444;text-align:left;font-size:14px;}
+    th{background:#333;}
+    tr:nth-child(even){background:#32324d;}
+    .status-reglee{color:#4CAF50;font-weight:bold;}
+    .status-partielle{color:#FFB300;}
+    .status-arreglee{color:#E53935;}
+  </style>
+</head>
+<body>
+
+<!-- Slide Menu -->
+<div id="slideMenu">
+  <div class="menu-item" onclick="window.location.href='caisse.html'"><i class="fas fa-arrow-left"></i> Retour Gestion Caisse</div>
+  <div class="menu-item" onclick="exportExcel()"><i class="fas fa-file-excel"></i> Exporter Excel</div>
+  <div class="menu-item" onclick="exportPDF()"><i class="fas fa-file-pdf"></i> Exporter PDF</div>
+</div>
+
+<button id="slideToggle" onclick="toggleSlide()"><i class="fas fa-bars"></i></button>
+
+<!-- Main Content -->
+<div id="mainContent">
+  <h1>Détails de l'Article</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Article</th>
+        <th>Date</th>
+        <th>Montant</th>
+        <th>Commentaire</th>
+      </tr>
+    </thead>
+    <tbody id="articleDetails"></tbody>
+  </table>
+  <h2>Total Montant : <span id="totalMontant">0</span></h2>
+</div>
+
+<script>
+  // Récupérer les données depuis localStorage
+  const caisse = JSON.parse(localStorage.getItem("caisse") || "[]");
+
+  // Récupérer l'article sélectionné depuis localStorage
+  const articleName = JSON.parse(localStorage.getItem("articleSelected")).article;
+
+  // Filtrer tous les articles ayant le même nom
+  const filteredArticles = caisse.filter(a => a.article === articleName);
+
+  // Vérifier si des articles ont été trouvés
+  if (filteredArticles.length > 0) {
+    const tbody = document.getElementById('articleDetails');
+    filteredArticles.forEach(article => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${article.article}</td>
+        <td>${article.date}</td>
+        <td>${article.montant}</td>
+        <td>${article.commentaire}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // Calculer et afficher le total des montants
+    const total = filteredArticles.reduce((sum, a) => sum + a.montant, 0);
+    document.getElementById("totalMontant").textContent = total.toLocaleString("fr-FR");
+  } else {
+    alert('Aucun article trouvé');
+  }
+
+  // Fonction pour afficher le menu
+  function toggleSlide() {
+    document.getElementById('slideMenu').classList.toggle('hidden');
+  }
+
+  // Exportation en Excel
+  function exportExcel() {
+    let wb = XLSX.utils.book_new();
+    let ws = XLSX.utils.json_to_sheet(filteredArticles);
+    XLSX.utils.book_append_sheet(wb, ws, "Articles");
+    XLSX.writeFile(wb, "articles.xlsx");
+  }
+
+  // Exportation en PDF
+  function exportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    filteredArticles.forEach((article, index) => {
+      doc.text(`Article: ${article.article} | Date: ${article.date} | Montant: ${article.montant} | Commentaire: ${article.commentaire}`, 10, 10 + (index * 10));
+    });
+    doc.save("articles.pdf");
+  }
+</script>
+
+</body>
+</html>
