@@ -179,7 +179,7 @@
   <input type="number" id="montant" placeholder="Montant">
   <input type="number" id="paye" placeholder="Montant payé">
   <input type="date" id="datePaiement">
-  <select id="compte"><option>CDM</option><option>ATT</option></select>
+  <select id="compte"><option>CREDIT DU MAROC</option><option>ATTIJARI WAFA BANK</option></select>
   <button class="btn" onclick="enregistrerFacture()">Enregistrer</button>
 </div>
 
@@ -260,7 +260,7 @@ function afficherTableau(){
     const tr=document.createElement('tr');
     if(pinnedSet.has(i)) tr.classList.add('pinned');
     tr.innerHTML = `
-      <td onclick="goToClient('${f.client}')">${f.client}</td>
+      <td style="cursor: pointer;" onclick="goToClient('${f.client}')">${f.client}</td>
       <td>${f.numero}</td>
       <td>${f.dateDepot}</td>
       <td>${formatMontant(f.montant)}</td>
