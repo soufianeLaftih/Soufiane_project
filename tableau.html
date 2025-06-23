@@ -181,8 +181,14 @@
   <input type="date" id="datePaiement">
   <select id="compte"><option>CREDIT DU MAROC</option><option>ATTIJARI WAFA BANK</option></select>
   <button class="btn" onclick="enregistrerFacture()">Enregistrer</button>
+ <button class="btn" onclick="annuler()">Annuler</button>
 </div>
-
+<script>
+  function annuler(){
+    let form = document.getElementById("factureForm");
+    form.style.display="none";
+  }
+</script>
 <script>
 let factures = JSON.parse(localStorage.getItem('factures')||'[]');
 let editingIndex = null;
