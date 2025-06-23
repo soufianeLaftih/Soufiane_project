@@ -98,8 +98,14 @@
   <input type="number" id="montantPaye" placeholder="Montant Payé">
   <input type="date" id="datePaiement">
   <button class="btn" onclick="enregistrerAchat()">Enregistrer</button>
+  <button class="btn" onclick="annuler()">Annuler</button>
 </div>
-
+<script>
+  function annuler(){
+    let form = document.getElementById("factureForm");
+    form.style.display="none";
+  }
+</script>
 <script>
 let achats = JSON.parse(localStorage.getItem('achats') || '[]');
 let editIndex = null;
