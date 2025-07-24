@@ -36,6 +36,44 @@
   </style>
 </head>
 <body>
+<div class="form-popup" id="calendrierPopup">
+  <h3>Historique des Remplissages</h3>
+  <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+    <button class="btn" onclick="filtrerParMois(0)">Janvier</button>
+    <button class="btn" onclick="filtrerParMois(1)">Février</button>
+    <button class="btn" onclick="filtrerParMois(2)">Mars</button>
+    <button class="btn" onclick="filtrerParMois(3)">Avril</button>
+    <button class="btn" onclick="filtrerParMois(4)">Mai</button>
+    <button class="btn" onclick="filtrerParMois(5)">Juin</button>
+    <button class="btn" onclick="filtrerParMois(6)">Juillet</button>
+    <button class="btn" onclick="filtrerParMois(7)">Août</button>
+    <button class="btn" onclick="filtrerParMois(8)">Septembre</button>
+    <button class="btn" onclick="filtrerParMois(9)">Octobre</button>
+    <button class="btn" onclick="filtrerParMois(10)">Novembre</button>
+    <button class="btn" onclick="filtrerParMois(11)">Décembre</button>
+  </div>
+  <div id="historiqueResultat" style="max-height:200px;overflow:auto;"></div>
+</div>
+<div class="form-popup" id="filtreMoisPopup">
+  <h3>Filtrer les opérations par mois</h3>
+  <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+    <button class="btn" onclick="filtrerTableauParMois(0)">Janvier</button>
+    <button class="btn" onclick="filtrerTableauParMois(1)">Février</button>
+    <button class="btn" onclick="filtrerTableauParMois(2)">Mars</button>
+    <button class="btn" onclick="filtrerTableauParMois(3)">Avril</button>
+    <button class="btn" onclick="filtrerTableauParMois(4)">Mai</button>
+    <button class="btn" onclick="filtrerTableauParMois(5)">Juin</button>
+    <button class="btn" onclick="filtrerTableauParMois(6)">Juillet</button>
+    <button class="btn" onclick="filtrerTableauParMois(7)">Août</button>
+    <button class="btn" onclick="filtrerTableauParMois(8)">Septembre</button>
+    <button class="btn" onclick="filtrerTableauParMois(9)">Octobre</button>
+    <button class="btn" onclick="filtrerTableauParMois(10)">Novembre</button>
+    <button class="btn" onclick="filtrerTableauParMois(11)">Décembre</button>
+    <button class="btn" style="background:#777;" onclick="reinitialiserFiltre()">Tout afficher</button>
+  </div>
+</div>
+
+</div>
 
 <div id="slideMenu">
   <div class="menu-item" onclick="openForm()"><i class="fas fa-plus"></i> Ajouter opération</div>
@@ -43,6 +81,9 @@
   <div class="menu-item" onclick="exportPDF()"><i class="fas fa-file-pdf"></i> Exporter PDF</div>
   <div class="menu-item" onclick="viderTableau()"><i class="fas fa-trash"></i> Vider le tableau</div>
   <div class="menu-item"><i class="fas fa-table"></i><a href="tableau.html">Retour Ventes</a></div>
+  <div class="menu-item" onclick="ouvrirCalendrier()"><i class="fas fa-calendar"></i> Historique Caisse</div>
+  <div class="menu-item" onclick="ouvrirFiltreMois()"><i class="fas fa-calendar-alt"></i> Recherche par mois</div>
+
 </div>
 
 <button id="slideToggle" onclick="toggleSlide()"><i class="fas fa-bars"></i></button>
@@ -50,8 +91,16 @@
 <div id="mainContent">
   <div class="top-bar">
     <div class="search-bar"><input type="text" id="searchInput" placeholder="Rechercher article..." onkeyup="rechercherArticle()"></div>
-    <button class="btn-add" onclick="openForm()">Ajouter</button>
+   <div style="display: flex; gap: 10px;">
+  <button class="btn-add" onclick="openForm()">Ajouter</button>
+  <button class="btn-add" onclick="openRemplirForm()">Remplir la caisse</button>
+</div>
+
   </div>
+  <div style="margin-bottom:15px;font-size:18px;font-weight:bold;color:#4caf50;">
+  Solde actuel de la caisse : <span id="soldeCaisse">0 DH</span>
+</div>
+
 
   <table>
     <thead>
@@ -75,15 +124,15 @@
   <input type="number" id="montant" placeholder="Montant DH">
   <input type="text" id="commentaire" placeholder="Commentaire">
   <button class="btn" onclick="enregistrer()">Enregistrer</button>
-    <button class="btn" onclick="annuler()">Annuler</button>
-
 </div>
-<script>
-  function annuler(){
-    let form = document.getElementById("form");
-    form.style.display="none";
-  }
-</script>
+<div class="form-popup" id="formRemplir">
+  <h3>Remplir la Caisse</h3>
+  <input type="date" id="remplirDate">
+  <input type="number" id="remplirMontant" placeholder="Montant à ajouter">
+  <button class="btn" onclick="ajouterFond()">Valider</button>
+</div>
+
+
 <script>
 let caisse = JSON.parse(localStorage.getItem('caisse') || '[]');
 let editIndex = null;
@@ -128,7 +177,14 @@ function enregistrer(){
     showNotification("Opération modifiée");
   } else {
     caisse.push(obj);
+    if(editIndex === null){
+  solde -= obj.montant;
+  localStorage.setItem('soldeCaisse', solde);
+  updateSoldeDisplay();
+}
+
     showNotification("Opération ajoutée");
+
   }
   localStorage.setItem('caisse', JSON.stringify(caisse));
   document.getElementById('form').style.display='none';
@@ -212,7 +268,126 @@ function goToArticle(articleName) {
 
 
 
+let solde = +localStorage.getItem('soldeCaisse') || 0;
+let historiqueCaisse = JSON.parse(localStorage.getItem('historiqueCaisse') || '[]');
+
+function updateSoldeDisplay() {
+  document.getElementById('soldeCaisse').textContent = `${solde.toLocaleString('fr-FR')} DH`;
+}
+
+function openRemplirForm() {
+  document.getElementById('formRemplir').style.display = 'block';
+}
+
+function ajouterFond() {
+  const montant = +document.getElementById('remplirMontant').value;
+  const date = document.getElementById('remplirDate').value;
+  if (!montant || !date) return alert("Veuillez remplir tous les champs");
+  solde += montant;
+  historiqueCaisse.push({ montant, date });
+  localStorage.setItem('soldeCaisse', solde);
+  localStorage.setItem('historiqueCaisse', JSON.stringify(historiqueCaisse));
+  document.getElementById('formRemplir').style.display = 'none';
+  updateSoldeDisplay();
+  showNotification("Caisse remplie avec succès");
+}
+function ouvrirCalendrier() {
+  document.getElementById('calendrierPopup').style.display = 'block';
+}
+
+function filtrerParMois() {
+  const mois = document.getElementById('moisSelect').value;
+  const resultat = historiqueCaisse.filter(e => e.date.split('-')[1] === mois);
+  const html = resultat.length
+    ? resultat.map(r => `<div>📅 ${r.date} → <b>${r.montant.toLocaleString('fr-FR')} DH</b></div>`).join('')
+    : "<i>Aucune opération ce mois</i>";
+  document.getElementById('historiqueResultat').innerHTML = html;
+}
+function ouvrirCalendrier() {
+  document.getElementById('calendrierPopup').style.display = 'block';
+}
+
+function filtrerParMois(moisIndex) {
+  const resultat = historiqueCaisse.filter(e => {
+    const mois = new Date(e.date).getMonth(); // extrait mois entre 0-11
+    return mois === moisIndex;
+  });
+
+  const moisNom = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"][moisIndex];
+
+  const html = resultat.length
+    ? `<h4>${moisNom}</h4>` + resultat.map(r =>
+        `<div>📅 <b>${r.date}</b> → ${r.montant.toLocaleString('fr-FR')} DH</div>`
+      ).join('')
+    : `<i>Aucune opération de remplissage en ${moisNom}</i>`;
+
+  document.getElementById('historiqueResultat').innerHTML = html;
+}
+
+function ouvrirFiltreMois() {
+  document.getElementById('filtreMoisPopup').style.display = 'block';
+}
+
+function filtrerTableauParMois(moisIndex) {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+  let count = 0;
+  let totalMois = 0;
+
+  caisse.forEach((c, i) => {
+    const mois = new Date(c.date).getMonth();
+    if (mois === moisIndex) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td onclick="goToArticle('${c.article}')" style="cursor:pointer;color:#00adb5;">${c.article}</td>
+        <td>${c.date}</td>
+        <td style="color:${getCouleurMontant(c.montant)};font-weight:bold">${c.montant.toLocaleString('fr-FR')} DH</td>
+        <td>${c.commentaire}</td>
+        <td class="action-icons">
+          <i class="fas fa-edit" onclick="openForm(${i})"></i>
+          <i class="fas fa-trash" onclick="supprimer(${i})"></i>
+        </td>
+      `;
+      tbody.appendChild(tr);
+      count++;
+      totalMois += c.montant;
+    }
+  });
+
+  // Fermer le popup après sélection
+  document.getElementById('filtreMoisPopup').style.display = 'none';
+
+  // Afficher le total
+  const totalDivId = "totalMois";
+  let totalDiv = document.getElementById(totalDivId);
+  if (!totalDiv) {
+    totalDiv = document.createElement('div');
+    totalDiv.id = totalDivId;
+    totalDiv.style.margin = "15px 0";
+    totalDiv.style.fontSize = "16px";
+    totalDiv.style.fontWeight = "bold";
+    totalDiv.style.color = "#00adb5";
+    document.getElementById('mainContent').insertBefore(totalDiv, document.querySelector('table'));
+  }
+  totalDiv.textContent = `Total du mois sélectionné : ${totalMois.toLocaleString('fr-FR')} DH`;
+
+  showNotification(`${count} opération(s) trouvée(s)`);
+}
+
+
+function reinitialiserFiltre() {
+  afficher();
+  document.getElementById('filtreMoisPopup').style.display = 'none';
+}
+
+// Helper pour afficher couleur du montant
+function getCouleurMontant(montant) {
+  return montant < 100 ? '#f44336' : montant < 500 ? '#ffc107' : '#4caf50';
+}
+
 afficher();
+updateSoldeDisplay();
 </script>
 </body>
 </html>
