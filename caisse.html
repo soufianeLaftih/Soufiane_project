@@ -94,6 +94,8 @@
    <div style="display: flex; gap: 10px;">
   <button class="btn-add" onclick="openForm()">Ajouter</button>
   <button class="btn-add" onclick="openRemplirForm()">Remplir la caisse</button>
+<button class="btn-add" onclick="openRetraitForm()">Retirer de la caisse</button>
+
 </div>
 
   </div>
@@ -130,6 +132,11 @@
   <input type="date" id="remplirDate">
   <input type="number" id="remplirMontant" placeholder="Montant à ajouter">
   <button class="btn" onclick="ajouterFond()">Valider</button>
+</div>
+<div class="form-popup" id="formRetrait">
+  <h3>Retirer de la Caisse</h3>
+  <input type="number" id="retraitMontant" placeholder="Montant à retirer">
+  <button class="btn" onclick="retirerFond()">Valider</button>
 </div>
 
 
@@ -384,6 +391,29 @@ function reinitialiserFiltre() {
 // Helper pour afficher couleur du montant
 function getCouleurMontant(montant) {
   return montant < 100 ? '#f44336' : montant < 500 ? '#ffc107' : '#4caf50';
+}
+let historiqueRetraits = JSON.parse(localStorage.getItem('historiqueRetraits') || '[]');
+
+function openRetraitForm() {
+  document.getElementById('formRetrait').style.display = 'block';
+}
+
+function retirerFond() {
+  const montant = +document.getElementById('retraitMontant').value;
+  if (!montant || montant <= 0) return alert("Veuillez entrer un montant valide");
+  
+  if (montant > solde) return alert("Le montant dépasse le solde actuel");
+
+  solde -= montant;
+  const dateRetrait = new Date().toISOString().split('T')[0]; // Date actuelle
+
+  historiqueRetraits.push({ montant, date: dateRetrait });
+  localStorage.setItem('soldeCaisse', solde);
+  localStorage.setItem('historiqueRetraits', JSON.stringify(historiqueRetraits));
+  
+  document.getElementById('formRetrait').style.display = 'none';
+  updateSoldeDisplay();
+  showNotification("Montant retiré de la caisse");
 }
 
 afficher();
