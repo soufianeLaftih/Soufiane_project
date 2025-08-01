@@ -117,6 +117,10 @@
     </thead>
     <tbody id="tableBody"></tbody>
   </table>
+  <div id="totalMontantsArticles" style="margin-top: 15px; font-size: 16px; font-weight: bold; color: #00adb5;">
+  Total des montants des articles : 0 DH
+</div>
+
 </div>
 
 <div class="form-popup" id="form">
@@ -215,6 +219,11 @@ function afficher(){
       </td>
     `;
     tbody.appendChild(tr);
+    // Après la boucle forEach
+let total = caisse.reduce((acc, op) => acc + op.montant, 0);
+document.getElementById('totalMontantsArticles').textContent =
+  `Total des montants des articles : ${total.toLocaleString('fr-FR')} DH`;
+
   });
 }
 
@@ -323,10 +332,14 @@ function filtrerParMois(moisIndex) {
   const moisNom = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"][moisIndex];
 
   const html = resultat.length
-    ? `<h4>${moisNom}</h4>` + resultat.map(r =>
-        `<div>📅 <b>${r.date}</b> → ${r.montant.toLocaleString('fr-FR')} DH</div>`
-      ).join('')
-    : `<i>Aucune opération de remplissage en ${moisNom}</i>`;
+  ? `<h4>${moisNom}</h4>` + resultat.map((r, i) =>
+      `<div style="cursor:pointer" onclick="supprimerRemplissage('${r.date}', ${r.montant})">
+         📅 <b>${r.date}</b> → ${r.montant.toLocaleString('fr-FR')} DH
+         <span style="color:red;font-weight:bold;margin-left:10px;">[X]</span>
+       </div>`
+    ).join('')
+  : `<i>Aucune opération de remplissage en ${moisNom}</i>`;
+
 
   document.getElementById('historiqueResultat').innerHTML = html;
 }
@@ -414,6 +427,25 @@ function retirerFond() {
   document.getElementById('formRetrait').style.display = 'none';
   updateSoldeDisplay();
   showNotification("Montant retiré de la caisse");
+}
+function supprimerRemplissage(date, montant) {
+  if (confirm(`Confirmer la suppression du remplissage de ${montant} DH du ${date} ?`)) {
+    // حذف العملية من التاريخ
+    historiqueCaisse = historiqueCaisse.filter(e => !(e.date === date && e.montant === montant));
+    localStorage.setItem('historiqueCaisse', JSON.stringify(historiqueCaisse));
+
+    // خصم المبلغ من الرصيد
+    solde -= montant;
+    
+    localStorage.setItem('soldeCaisse', solde);
+
+    updateSoldeDisplay();
+    showNotification("Remplissage supprimé et montant retiré");
+    
+    // إعادة عرض النتائج المفلترة (نفس الشهر)
+    const mois = new Date(date).getMonth();
+    filtrerParMois(mois);
+  }
 }
 
 afficher();
