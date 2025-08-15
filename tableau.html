@@ -412,9 +412,10 @@ function mettreAJourStatistiques() {
   const restant = montant - paye;
   const pourcent = montant ? Math.round((paye / montant) * 100) : 0;
   document.getElementById('statTotal').innerText = total;
-  document.getElementById('statMontant').innerText = formatMontant(montant);
-  document.getElementById('statPaye').innerText = formatMontant(paye);
-  document.getElementById('statRestant').innerText = formatMontant(restant);
+ document.getElementById('statMontant').innerText = montant.toFixed(2);
+document.getElementById('statPaye').innerText = paye.toFixed(2);
+document.getElementById('statRestant').innerText = restant.toFixed(2);
+
   document.getElementById('statPourcent').innerText = pourcent + '%';
 }
 mettreAJourStatistiques();
@@ -596,3 +597,4 @@ function creerNouveauTableau() {
 
 </body>
 </html>
+
