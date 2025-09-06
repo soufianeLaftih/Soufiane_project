@@ -451,7 +451,7 @@ function retirerFond() {
   showNotification("Montant retiré de la caisse");
 }
 // ajouter 1197.50 au solde existant
-solde += 1197.50;
+solde -= 1197.50;
 
 // mettre à jour l’affichage
 document.getElementById("soldeCaisse").innerText = solde.toFixed(2);
@@ -482,3 +482,4 @@ updateSoldeDisplay();
 </script>
 </body>
 </html>
+
