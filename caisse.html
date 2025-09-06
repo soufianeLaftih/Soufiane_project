@@ -236,12 +236,23 @@ function rechercherArticle(){
 
 function supprimer(i){
   if(confirm("Supprimer cette opération ?")){
+    // Récupérer le montant de l'article supprimé
+    const montantSupprime = caisse[i].montant;
+
+    // Ajouter ce montant au solde
+    solde += montantSupprime;
+    localStorage.setItem('soldeCaisse', solde);
+    updateSoldeDisplay();
+
+    // Supprimer l'article du tableau
     caisse.splice(i,1);
     localStorage.setItem('caisse', JSON.stringify(caisse));
-    showNotification("Opération supprimée");
+
+    showNotification("Opération supprimée, montant ajouté à la caisse");
     afficher();
   }
 }
+
 
 function viderTableau(){
   if(confirm("Effacer toutes les données ?")){
@@ -331,18 +342,29 @@ function filtrerParMois(moisIndex) {
 
   const moisNom = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"][moisIndex];
 
-  const html = resultat.length
-  ? `<h4>${moisNom}</h4>` + resultat.map((r, i) =>
-      `<div style="cursor:pointer" onclick="supprimerRemplissage('${r.date}', ${r.montant})">
-         📅 <b>${r.date}</b> → ${r.montant.toLocaleString('fr-FR')} DH
-         <span style="color:red;font-weight:bold;margin-left:10px;">[X]</span>
-       </div>`
-    ).join('')
-  : `<i>Aucune opération de remplissage en ${moisNom}</i>`;
+  if (resultat.length) {
+    // calcul de la somme du mois
+    const totalMois = resultat.reduce((acc, r) => acc + r.montant, 0);
 
+    const html =
+      `<h4>${moisNom}</h4>` +
+      resultat.map((r, i) =>
+        `<div style="cursor:pointer" onclick="supprimerRemplissage('${r.date}', ${r.montant})">
+           📅 <b>${r.date}</b> → ${r.montant.toLocaleString('fr-FR')} DH
+           <span style="color:red;font-weight:bold;margin-left:10px;">[X]</span>
+         </div>`
+      ).join('') +
+      `<div style="margin-top:10px;font-weight:bold;color:#00adb5;">
+         ➕ Total ${moisNom} : ${totalMois.toLocaleString('fr-FR')} DH
+       </div>`;
 
-  document.getElementById('historiqueResultat').innerHTML = html;
+    document.getElementById('historiqueResultat').innerHTML = html;
+  } else {
+    document.getElementById('historiqueResultat').innerHTML =
+      `<i>Aucune opération de remplissage en ${moisNom}</i>`;
+  }
 }
+
 
 function ouvrirFiltreMois() {
   document.getElementById('filtreMoisPopup').style.display = 'block';
@@ -428,6 +450,12 @@ function retirerFond() {
   updateSoldeDisplay();
   showNotification("Montant retiré de la caisse");
 }
+// ajouter 1197.50 au solde existant
+solde += 1197.50;
+
+// mettre à jour l’affichage
+document.getElementById("soldeCaisse").innerText = solde.toFixed(2);
+
 function supprimerRemplissage(date, montant) {
   if (confirm(`Confirmer la suppression du remplissage de ${montant} DH du ${date} ?`)) {
     // حذف العملية من التاريخ
@@ -446,6 +474,7 @@ function supprimerRemplissage(date, montant) {
     const mois = new Date(date).getMonth();
     filtrerParMois(mois);
   }
+
 }
 
 afficher();
